@@ -1197,6 +1197,16 @@
             if (tab === 'result') loadSurveyResults();
         }
 
+        function renderAdminQuestions() {
+            const list = document.getElementById('sur-admin-questions-list'); if (!list) return;
+            adminQuestions.forEach((q, i) => { if (!q.id) q.id = 'q' + (Date.now() + i); });
+            // 可作條件/跳轉來源的選擇題
+            const condSources = adminQuestions.filter(q => q.type === 'select' || q.type === 'yesno');
+            // 可跳轉的區段（section 題型）
+            const sections = adminQuestions.filter(q => q.type === 'section');
+            const branchTargetOptions = `<option value="__next__">下一區段（預設）</option><option value="__end__">提交問卷</option>` +
+                sections.map(s => `<option value="${s.id}">${s.label || '未命名區段'}</option>`).join('');
+
             const isActuallyAdmin = currentUser && currentUser.Role === 'Admin';
 
             list.innerHTML = adminQuestions.map((q, i) => {
