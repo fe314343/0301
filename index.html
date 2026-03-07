@@ -431,6 +431,25 @@
                 <button id="broadcast-announce-btn" onclick="openAnnouncementModal()"
                     class="bg-amber-100 text-amber-700 px-6 py-4 rounded-[22px] text-xs font-black flex items-center justify-center gap-3 border border-amber-200 active:scale-95 w-full shadow-md"><i
                         data-lucide="megaphone" class="w-5 h-5"></i>發布全員公告</button>
+
+                <!-- 系統授權碼設定 (僅管理員可見) -->
+                <div id="admin-bypass-config" class="hidden glass-panel p-6 rounded-[32px] w-full shadow-lg border-white/40 bg-indigo-50/30">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        </div>
+                        <h4 class="font-[900] text-slate-700 text-sm tracking-tight">系統授權碼設定</h4>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="bypass-code-input" placeholder="演出授權碼" 
+                            class="flex-1 px-5 py-3.5 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm">
+                        <button onclick="handleSaveBypassCode()" id="btn-save-bypass"
+                            class="px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-xs shadow-md active:scale-95 transition-all">儲存</button>
+                    </div>
+                    <p class="text-[9px] text-slate-400 mt-3 px-1 leading-relaxed text-left">
+                        提示：此密碼用於團員在「不在崇正寶宮」定位範圍時簽到之用。建議設定 4-6 位數字。
+                    </p>
+                </div>
             </div>
 
             <!-- 分頁5: 問卷管理 -->
@@ -712,6 +731,7 @@
 
         let currentUser = null, currentEventData = null, allEvents = [], allSurveys = [], editingSurveyId = null, editingId = null, cachedMemberList = [];
         let surveyQuestions = [], userResponses = {}, adminQuestions = [], currentEmbedURL = "";
+        let currentBypassCode = ""; // 從後端讀取的演出授權碼
         // 區段導覽狀態
         let surveySections = [], currentSectionIdx = 0, sectionHistory = [], allSurveyResponses = {};
 
@@ -850,6 +870,9 @@
             if (broadcastAddBtn) broadcastAddBtn.classList.toggle('hidden', !isActuallyAdmin);
             if (broadcastAnnounceBtn) broadcastAnnounceBtn.classList.toggle('hidden', !(isActuallyAdmin || isActuallyOfficer));
 
+            const bypassConfig = document.getElementById('admin-bypass-config');
+            if (bypassConfig) bypassConfig.classList.toggle('hidden', !isActuallyAdmin);
+
             const monitorTitle = document.getElementById('monitor-title');
             if (monitorTitle) monitorTitle.innerText = isLeader ? `${currentUser.Section} 簽到狀態` : "全員簽到狀態";
 
@@ -922,6 +945,11 @@
                     ti.innerText = res.enabled ? `${res.eventStart} ~ ${res.eventEnd}` : "--:--";
                     ti.classList.toggle('opacity-100', res.enabled);
                 }
+                if (res.bypassCode) {
+                    currentBypassCode = res.bypassCode;
+                    const input = document.getElementById('bypass-code-input');
+                    if (input) input.value = res.bypassCode;
+                }
             }
         }
 
@@ -971,11 +999,36 @@
             try {
                 const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000 }));
                 const dist = (function (lat1, lon1, lat2, lon2) { const R = 6371e3; const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180; const df = (lat2 - lat1) * Math.PI / 180, dl = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(df / 2) * Math.sin(df / 2) + Math.cos(f1) * Math.cos(f2) * Math.sin(dl / 2) * Math.sin(dl / 2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); })(pos.coords.latitude, pos.coords.longitude, ALLOWED_LOCATIONS[0].lat, ALLOWED_LOCATIONS[0].lng);
-                if (dist > MAX_DISTANCE) { showToast(`距離崇正寶宮約 ${Math.round(dist)}m，請靠近 500m 內再簽到`, true); btn.disabled = false; btn.innerHTML = oldH; safeCreateIcons(); return; }
+                
+                if (dist > MAX_DISTANCE) {
+                    // 原本顯示距離，改為統一文字
+                    const userInput = prompt("不在崇正寶宮\n若為外部演出，請輸入演出授權碼簽到：");
+                    if (!userInput) {
+                        btn.disabled = false; btn.innerHTML = oldH; safeCreateIcons(); return;
+                    }
+                    if (String(userInput) !== String(currentBypassCode)) {
+                        showToast("授權碼錯誤", true);
+                        btn.disabled = false; btn.innerHTML = oldH; safeCreateIcons(); return;
+                    }
+                }
+                
                 const res = await callBackend('submitCheckin', { email: currentUser.Email, name: currentUser.Name, section: currentUser.Section, date: currentEventData.eventDate, eventName: currentEventData.eventName, eventTimeRange: `${currentEventData.eventStart} ~ ${currentEventData.eventEnd}` });
                 if (res?.success) { showToast("簽到成功！排練愉快"); currentEventData.hasCheckedIn = true; updateCheckinBtnStatus(true); setTimeout(() => { refreshSystemStatus(); loadAttendanceHistory(); }, 1500); }
                 else showToast(res.message || "簽到失敗", true);
             } catch (e) { showToast("定位失敗", true); btn.disabled = false; btn.innerHTML = oldH; safeCreateIcons(); }
+        }
+
+        async function handleSaveBypassCode() {
+            const input = document.getElementById('bypass-code-input');
+            const newCode = input?.value.trim() || "";
+            if (!newCode) return showToast("授權碼不可為空", true);
+            const btn = document.getElementById('btn-save-bypass'); setBtnLoading(btn, true, "儲存中...");
+            try {
+                const res = await callBackend('saveSystemSetting', { key: 'bypassCode', value: newCode });
+                if (res?.success) { showToast("系統授權碼已更新"); currentBypassCode = newCode; }
+                else showToast("更新失敗", true);
+            } catch (e) { showToast("連線異常", true); }
+            finally { setBtnLoading(btn, false, "儲存"); }
         }
 
         async function fetchAnnouncement() {
