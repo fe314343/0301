@@ -433,9 +433,14 @@
                 <div class="glass-panel p-5 rounded-[32px] w-full shadow-lg border-white/40">
                     <div id="admin-event-list" class="space-y-4"></div>
                 </div>
-                <button id="broadcast-announce-btn" onclick="openAnnouncementModal()"
-                    class="bg-amber-100 text-amber-700 px-6 py-4 rounded-[22px] text-xs font-black flex items-center justify-center gap-3 border border-amber-200 active:scale-95 w-full shadow-md"><i
-                        data-lucide="megaphone" class="w-5 h-5"></i>發布全員公告</button>
+                <div class="flex gap-2">
+                    <button id="broadcast-announce-btn" onclick="openAnnouncementModal()"
+                        class="flex-[2] bg-amber-100 text-amber-700 px-6 py-4 rounded-[22px] text-xs font-black flex items-center justify-center gap-3 border border-amber-200 active:scale-95 shadow-md"><i
+                            data-lucide="megaphone" class="w-5 h-5"></i>發布全員公告</button>
+                    <button onclick="testNotification()"
+                        class="flex-1 bg-white text-slate-500 px-4 py-4 rounded-[22px] text-[10px] font-black flex items-center justify-center gap-2 border border-slate-200 active:scale-95 shadow-sm"><i
+                            data-lucide="bell-ring" class="w-4 h-4"></i>測試推播</button>
+                </div>
 
                 <!-- 系統授權碼設定 (僅管理員可見) -->
                 <div id="admin-bypass-config" class="hidden glass-panel p-6 rounded-[32px] w-full shadow-lg border-white/40 bg-indigo-50/30">
@@ -1044,12 +1049,7 @@
                 // --- 檢查是否有新公告並觸發推播 (PWA) ---
                 const lastContent = localStorage.getItem('last_announcement');
                 if (lastContent && lastContent !== res.content) {
-                    if (Notification.permission === "granted") {
-                        new Notification("崇正國樂團：新公告", {
-                            body: res.content.substring(0, 40) + "...",
-                            icon: "icon-192.png"
-                        });
-                    }
+                    showLocalNotification("崇正國樂團：新公告", res.content.substring(0, 40) + "...");
                 }
                 localStorage.setItem('last_announcement', res.content);
 
@@ -1059,6 +1059,33 @@
                 const formattedTime = formatDateTime(res.updateTime);
                 if (timeEl) timeEl.innerText = formattedTime ? `最後更新: ${formattedTime}` : "";
             } else { if (board) board.classList.add('hidden'); }
+        }
+
+        async function showLocalNotification(title, body) {
+            if (Notification.permission !== "granted") return;
+            try {
+                // 優先使用 ServiceWorkerRegistration (PWA 最佳實作)
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.ready;
+                    if (reg && reg.showNotification) {
+                        return reg.showNotification(title, { body, icon: "icon-192.png", badge: "icon-192.png", vibrate: [100, 50, 100] });
+                    }
+                }
+                // 備援：一般桌面通知
+                new Notification(title, { body, icon: "icon-192.png" });
+            } catch (e) { console.error("Notification failed", e); }
+        }
+
+        function testNotification() {
+            if (Notification.permission === "default") {
+                requestNotificationPermission().then(() => {
+                    if (Notification.permission === "granted") showLocalNotification("測試通知", "這是一則推播測試，代表您的系統設定正確！");
+                });
+            } else if (Notification.permission === "granted") {
+                showLocalNotification("測試通知", "這是一則推播測試，代表您的系統設定正確！");
+            } else {
+                alert("通知權限已被拒絕，請至瀏覽器設定中開啟。");
+            }
         }
 
         async function handleSaveAnnouncement() {
@@ -1638,7 +1665,11 @@
                     const reg = await navigator.serviceWorker.register('sw.js');
                     console.log('ServiceWorker registered:', reg);
                     // 登入後自動詢問推播權限
-                    if (currentUser) requestNotificationPermission();
+                    if (currentUser) {
+                        requestNotificationPermission();
+                        // 每 5 分鐘輪詢一次公告
+                        setInterval(fetchAnnouncement, 5 * 60 * 1000);
+                    }
                 } catch (e) { console.error('SW registration failed:', e); }
             }
         }
