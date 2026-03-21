@@ -1073,7 +1073,13 @@
                     const reg = await navigator.serviceWorker.ready;
                     if (reg && reg.showNotification) {
                         console.log("Using Service Worker showNotification");
-                        await reg.showNotification(title, { body, icon: "icon-192.png", badge: "icon-192.png", vibrate: [100, 50, 100], data: { url: window.location.href } });
+                        await reg.showNotification(title, { 
+                            body, 
+                            icon: "icon-192.png", 
+                            badge: "icon-192.png", 
+                            vibrate: [200, 100, 200, 100, 500], 
+                            data: { url: window.location.href } 
+                        });
                         return;
                     }
                 }
@@ -1687,8 +1693,8 @@
                     // 登入後自動詢問推播權限
                     if (currentUser) {
                         requestNotificationPermission();
-                        // 每 5 分鐘輪詢一次公告
-                        setInterval(fetchAnnouncement, 5 * 60 * 1000);
+                        // 每 1 分鐘輪詢一次公告 (模擬即時推播)
+                        setInterval(fetchAnnouncement, 60 * 1000);
                     }
                 } catch (e) { console.error('SW registration failed:', e); }
             }
