@@ -1062,29 +1062,49 @@
         }
 
         async function showLocalNotification(title, body) {
-            if (Notification.permission !== "granted") return;
+            console.log("Attempting notification:", title, "Permission:", Notification.permission);
+            if (Notification.permission !== "granted") {
+                console.warn("Notification permission not granted.");
+                return;
+            }
             try {
                 // 優先使用 ServiceWorkerRegistration (PWA 最佳實作)
                 if ('serviceWorker' in navigator) {
                     const reg = await navigator.serviceWorker.ready;
                     if (reg && reg.showNotification) {
-                        return reg.showNotification(title, { body, icon: "icon-192.png", badge: "icon-192.png", vibrate: [100, 50, 100] });
+                        console.log("Using Service Worker showNotification");
+                        await reg.showNotification(title, { body, icon: "icon-192.png", badge: "icon-192.png", vibrate: [100, 50, 100], data: { url: window.location.href } });
+                        return;
                     }
                 }
                 // 備援：一般桌面通知
+                console.log("Using fallback new Notification()");
                 new Notification(title, { body, icon: "icon-192.png" });
-            } catch (e) { console.error("Notification failed", e); }
+            } catch (e) { 
+                console.error("Notification failed:", e);
+                showToast("通知發送失敗: " + e.message, true);
+            }
         }
 
         function testNotification() {
+            if (!("Notification" in window)) {
+                return showToast("您的瀏覽器不支援通知功能", true);
+            }
             if (Notification.permission === "default") {
+                showToast("正在請求權限...");
                 requestNotificationPermission().then(() => {
-                    if (Notification.permission === "granted") showLocalNotification("測試通知", "這是一則推播測試，代表您的系統設定正確！");
+                    if (Notification.permission === "granted") {
+                        showLocalNotification("測試通知", "這是一則推播測試，代表您的系統設定正確！");
+                    } else {
+                        showToast("權限被拒絕", true);
+                    }
                 });
             } else if (Notification.permission === "granted") {
-                showLocalNotification("測試通知", "這是一則推播測試，代表您的系統設定正確！");
+                showLocalNotification("測試通知", "這是一則推播測試，您的權限已開啟！");
+                showToast("已發送測試通知");
             } else {
-                alert("通知權限已被拒絕，請至瀏覽器設定中開啟。");
+                showToast("請在瀏覽器設定中手動開啟通知權限", true);
+                console.error("Permission denied state.");
             }
         }
 
@@ -1676,12 +1696,23 @@
 
         async function requestNotificationPermission() {
             if (!("Notification" in window)) return;
+            
+            // iOS 檢查
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            if (isIOS && !isStandalone) {
+                showToast("iOS 用戶請先「加入主畫面」才能開啟通知", true);
+                return;
+            }
+
             if (Notification.permission === "default") {
-                const permission = await Notification.requestPermission();
-                if (permission === "granted") {
-                    console.log("Notification permission granted.");
-                    // 這裡以後可以實作 subscribePush() 將 Token 傳給 GAS
-                }
+                try {
+                    const permission = await Notification.requestPermission();
+                    console.log("Permission request result:", permission);
+                    if (permission === "granted") {
+                        showToast("已開啟通知權限");
+                    }
+                } catch (e) { console.error("Permission request failed", e); }
             }
         }
     </script>
