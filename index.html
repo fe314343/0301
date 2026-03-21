@@ -1064,17 +1064,28 @@
                 const res = await callBackend('getEventList', {});
                 if (res?.success) {
                     allEvents = res.data || [];
+                    const activeEventId = res.activeEventId;
                     const isActuallyAdmin = currentUser && currentUser.Role === 'Admin';
                     if (allEvents.length === 0) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前無活動資料</div>';
                     else {
-                        listEl.innerHTML = allEvents.map(ev => `
+                        listEl.innerHTML = allEvents.map(ev => {
+                            const isActive = String(ev.ID) === String(activeEventId);
+                            return `
                             <div class="bg-white/70 p-5 rounded-[28px] border border-white shadow-sm flex flex-col gap-3">
-                                <div class="text-left"><p class="font-[900] text-slate-800 text-sm mb-1">${ev.Name}</p><p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${ev.Date} • ${ev.StartTime} - ${ev.EndTime}</p></div>
-                                <div class="flex gap-2">
-                                    <button onclick="activateEventFromList('${ev.ID}')" class="flex-1 py-3 bg-amber-50 text-amber-600 rounded-2xl active:scale-95 text-[10px] font-black">廣播</button>
-                                    ${isActuallyAdmin ? `<button onclick="openEditModal('${ev.ID}')" class="flex-1 py-3 bg-indigo-50 rounded-2xl text-indigo-600 active:scale-95 text-[10px] font-black">編輯</button>` : ''}
+                                <div class="text-left">
+                                    <p class="font-[900] text-slate-800 text-sm mb-1">${ev.Name}</p>
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${ev.Date} • ${ev.StartTime} - ${ev.EndTime}</p>
+                                    ${isActive ? '<p class="text-[9px] text-emerald-500 font-black mt-1 uppercase tracking-tighter">● 正在廣播中</p>' : ''}
                                 </div>
-                            </div>`).join('');
+                                <div class="flex gap-2">
+                                    ${isActive 
+                                        ? `<button onclick="deactivateEventFromList()" class="flex-1 py-3 bg-rose-50 text-rose-600 rounded-2xl active:scale-95 text-[10px] font-black border border-rose-100">停止廣播</button>`
+                                        : `<button onclick="activateEventFromList('${ev.ID}')" class="flex-1 py-3 bg-amber-50 text-amber-600 rounded-2xl active:scale-95 text-[10px] font-black border border-amber-100">廣播</button>`
+                                    }
+                                    ${isActuallyAdmin ? `<button onclick="openEditModal('${ev.ID}')" class="flex-1 py-3 bg-indigo-50 rounded-2xl text-indigo-600 active:scale-95 text-[10px] font-black border border-indigo-100">編輯</button>` : ''}
+                                </div>
+                            </div>`;
+                        }).join('');
                     }
                 } else listEl.innerHTML = `<div class="py-10 text-rose-500 font-bold text-center">載入失敗: ${res?.message || '未知錯誤'}</div>`;
             } catch (e) { listEl.innerHTML = '<div class="py-10 text-rose-500 font-bold text-center">連線錯誤</div>'; }
@@ -1083,7 +1094,12 @@
 
         async function activateEventFromList(id) {
             const res = await callBackend('activateEvent', { id });
-            if (res?.success) { showToast("活動已開始廣播"); refreshSystemStatus(); }
+            if (res?.success) { showToast("活動已開始廣播"); refreshSystemStatus(); loadEventList(); }
+        }
+
+        async function deactivateEventFromList() {
+            const res = await callBackend('deactivateEvent', {});
+            if (res?.success) { showToast("廣播已關閉"); refreshSystemStatus(); loadEventList(); }
         }
 
         function openEditModal(id) {
