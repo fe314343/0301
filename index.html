@@ -551,6 +551,13 @@
                         <span class="text-[10px] font-black text-slate-500 uppercase text-center">帳號</span>
                         <span class="text-sm font-bold text-slate-700 text-center" id="profile-email">-</span>
                     </div>
+                    <!-- 系統診斷資訊 -->
+                    <div class="p-4 bg-indigo-50/50 rounded-[20px] text-left space-y-2">
+                        <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">系統診斷 (除錯用)</p>
+                        <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">PWA 模式</span><span id="diag-pwa" class="text-slate-600">-</span></div>
+                        <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">通知支援</span><span id="diag-support" class="text-slate-600">-</span></div>
+                        <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">權限狀態</span><span id="diag-permission" class="text-slate-600">-</span></div>
+                    </div>
                     <div id="profile-notif-row" class="space-y-1 hidden"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">推播通知</label>
                         <button onclick="requestNotificationPermission(true)" class="w-full py-4 bg-white text-indigo-600 rounded-[18px] font-black text-xs flex items-center justify-center gap-2 border border-slate-100 shadow-sm active:scale-95"><i data-lucide="bell" class="w-4 h-4"></i>開啟通知功能</button>
                     </div>
@@ -923,25 +930,26 @@
             if (nameInput) nameInput.value = currentUser.Name || "";
             if (profileInitial) profileInitial.innerText = (currentUser.Name || "?").charAt(0);
             if (roleEl) roleEl.innerText = currentUser.Role || "Member";
-
-            const pEmail = document.getElementById('profile-email');
-            if (pEmail) pEmail.innerText = currentUser.Email || "";
-
-            const pSection = document.getElementById('profile-section-display');
-            if (pSection) pSection.innerText = currentUser.Section || "-";
+            if (emailEl) emailEl.innerText = currentUser.Email || "";
+            if (sectionEl) sectionEl.innerText = currentUser.Section || "-";
 
             if (instSelect) {
-                instSelect.innerHTML = '';
-                if (orchestraData[currentUser.Section]) {
-                    orchestraData[currentUser.Section].forEach(i => {
-                        const opt = new Option(i, i);
-                        if (i === currentUser.Instrument) opt.selected = true;
-                        instSelect.add(opt);
-                    });
-                }
+                instSelect.innerHTML = (orchestraData[currentUser.Section] || []).map(i => `<option value="${i}" ${i === currentUser.Instrument ? 'selected' : ''}>${i}</option>`).join('');
             }
+
+            // --- 更新診斷資訊 ---
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            const hasNotif = ("Notification" in window);
+            const diagPwa = document.getElementById('diag-pwa');
+            const diagSupport = document.getElementById('diag-support');
+            const diagPermission = document.getElementById('diag-permission');
+            if (diagPwa) diagPwa.innerText = isStandalone ? "YES (獨立視窗)" : "NO (一般瀏覽器)";
+            if (diagSupport) diagSupport.innerText = hasNotif ? "YES (支援)" : "NO (不支援)";
+            if (diagPermission) diagPermission.innerText = hasNotif ? Notification.permission : "N/A";
+
             if (modal) modal.classList.remove('hidden');
             safeCreateIcons();
+            requestNotificationPermission(); // 順便檢查是否該顯示/隱藏權限按鈕
         }
 
         function closeProfileModal() {
@@ -1725,19 +1733,25 @@
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
             
+            // 如果已經開啟，全部隱藏
             if (Notification.permission === "granted") {
                 banner?.classList.add('hidden');
                 profileRow?.classList.add('hidden');
                 return;
             }
 
-            if (isIOS && !isStandalone) {
-                if (isManual) showToast("iOS 用戶請先「加入主畫面」才能開啟通知", true);
-                banner?.classList.add('hidden'); // iOS 非 PWA 模式不顯示 Banner
-                return;
+            // iOS 的特殊處理：必須在 Standalone 模式下才支援
+            if (isIOS) {
+                if (!isStandalone) {
+                    // 非 PWA 模式：顯示說明 Toast 並隱藏 Banner (因為 Banner 按了也沒用)
+                    if (isManual) showToast("iOS 必須點擊「分享」並「加入主畫面」後開啟 App 才能使用通知", true);
+                    banner?.classList.add('hidden');
+                    profileRow?.classList.add('hidden'); // 这里也可以保持隐藏或者显示一个说明
+                    return;
+                }
             }
 
-            // 顯示 Banner 或 Profile 按鈕
+            // 顯示 Banner 或 Profile 按鈕 (排除 iOS 非 PWA 的情況)
             if (Notification.permission === "default") {
                 banner?.classList.remove('hidden');
                 profileRow?.classList.remove('hidden');
@@ -1746,6 +1760,7 @@
                 profileRow?.classList.add('hidden');
             }
 
+            // 手動觸發彈窗
             if (isManual && Notification.permission === "default") {
                 try {
                     const permission = await Notification.requestPermission();
@@ -1754,6 +1769,10 @@
                         showToast("已開啟通知權限");
                         banner?.classList.add('hidden');
                         profileRow?.classList.add('hidden');
+                        // 測試發送一則
+                        showLocalNotification("成功開啟通知", "您現在可以接收即時公告提醒囉！");
+                    } else if (permission === "denied") {
+                        showToast("權限被拒絕，請在設定中開啟", true);
                     }
                 } catch (e) { console.error("Permission request failed", e); }
             }
