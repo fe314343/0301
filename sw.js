@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cz-smart-v4';
+const CACHE_NAME = 'cz-smart-v5';
 const ASSETS = [
   './',
   './index.html',

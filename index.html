@@ -1715,7 +1715,11 @@
         }
 
         function closeAnnouncementModal() {
-            document.getElementById('announcement-modal')?.classList.add('hidden');
+            const modal = document.getElementById('announcement-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none'; // 重置行內樣式
+            }
         }
         function closeSurveyAdminModal() { document.getElementById('survey-admin-modal')?.classList.add('hidden'); }
         function addSurveyQuestion() { adminQuestions.push({ id: 'q' + Date.now(), label: "新題目", type: "text", options: "", required: false, condition: null, branches: {} }); renderAdminQuestions(); }
