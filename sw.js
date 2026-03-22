@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cz-smart-v9';
+const CACHE_NAME = 'cz-smart-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -27,12 +27,28 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 攔截請求並回應快取
+// 攔截請求
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-  );
+  const url = new URL(event.request.url);
+  
+  // 針對主頁面使用 Network-First 策略，確保 UI 邏輯隨時更新
+  if (url.pathname === '/' || url.pathname.endsWith('index.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clonedRes = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clonedRes));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    // 其他資源使用 Cache-First 策略
+    event.respondWith(
+      caches.match(event.request)
+        .then(response => response || fetch(event.request))
+    );
+  }
 });
 
 // 監聽推播訊息 (預留)

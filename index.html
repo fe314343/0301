@@ -1564,6 +1564,19 @@
                 try {
                     const reg = await navigator.serviceWorker.register('sw.js');
                     console.log('ServiceWorker registered:', reg);
+                    
+                    // 偵測 Service Worker 更新
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // 新版本已下載，提示用戶
+                                showToast("偵測到新版本，正在自動更新...", false);
+                                setTimeout(() => location.reload(true), 1500);
+                            }
+                        };
+                    };
+
                     // 如果已經登入了，直接啟動
                     if (currentUser) {
                         setupUserPWA();
@@ -1666,7 +1679,7 @@
                 <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">主要樂器</label><select id="profile-instrument-input" class="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-center appearance-none shadow-sm"></select></div>
                 <div class="flex justify-between items-center p-4 bg-slate-50 rounded-[20px] text-center"><span class="text-[10px] font-black text-slate-500 uppercase text-center">組別</span><span class="text-sm font-bold text-slate-700 text-center" id="profile-section-display">-</span></div>
                 <div class="p-4 bg-indigo-50/50 rounded-[20px] text-left space-y-2">
-                    <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">系統診斷 v6</p>
+                    <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">系統診斷 v10</p>
                     <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">PWA 模式</span><span id="diag-pwa" class="text-slate-600">-</span></div>
                     <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">通知支援</span><span id="diag-support" class="text-slate-600">-</span></div>
                     <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">權限狀態</span><span id="diag-permission" class="text-slate-600">-</span></div>
