@@ -1732,6 +1732,11 @@
                     <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">開始</label><input type="time" id="edit-start" class="w-full px-5 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center"></div>
                     <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">結束</label><input type="time" id="edit-end" class="w-full px-5 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center"></div>
                 </div>
+                <!-- 新增：中場休息時間設定 -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">休息開始</label><input type="time" id="edit-rest-start" class="w-full px-5 py-4 rounded-[18px] bg-slate-100 border-none font-bold text-center opacity-70"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">休息結束</label><input type="time" id="edit-rest-end" class="w-full px-5 py-4 rounded-[18px] bg-slate-100 border-none font-bold text-center opacity-70"></div>
+                </div>
             </div>
             <div class="flex gap-4 mt-8">
                 <button onclick="closeEditModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
