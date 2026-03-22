@@ -695,9 +695,9 @@
 
         <!-- 公告編輯 Modal -->
         <div id="announcement-modal"
-            class="hidden fixed inset-0 z-[140] flex items-center justify-center p-6 shadow-2xl">
-            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeAnnouncementModal()"></div>
-            <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up">
+            class="hidden fixed inset-0 z-[999] flex items-center justify-center p-6 shadow-2xl">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" style="pointer-events: auto;" onclick="closeAnnouncementModal()"></div>
+            <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up" style="z-index: 1000;">
                 <h3
                     class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2">
                     <i data-lucide="megaphone" class="w-6 h-6 text-amber-500"></i>發布全員公告
