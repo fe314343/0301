@@ -531,6 +531,15 @@
         // 區段導覽狀態
         let surveySections = [], currentSectionIdx = 0, sectionHistory = [], allSurveyResponses = {};
 
+        // --- 新增：從本地存儲恢復登入狀態 ---
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try { 
+                currentUser = JSON.parse(storedUser); 
+                console.log("Restored user from storage:", currentUser);
+            } catch (e) { localStorage.removeItem('user'); }
+        }
+
         function formatDateTime(isoStr, onlyDate = false) {
             if (!isoStr) return "";
             const date = new Date(isoStr);
@@ -626,9 +635,15 @@
             const res = await callBackend('loginUser', { email: emailEl.value.trim(), password: pwdEl.value.trim() });
             setBtnLoading(btn, false, "立即登入");
             if (res?.success) {
-                currentUser = res.user; setupDashboard(); switchView('dashboard-view');
-                switchTab('home'); refreshSystemStatus(); loadAttendanceHistory();
-                // 啟動 PWA 使用者相關功能 (輪詢、推播)
+                // 修正：從 res.userData 讀取，並存入 localStorage
+                currentUser = res.userData; 
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                
+                setupDashboard(); 
+                switchView('dashboard-view');
+                switchTab('home'); 
+                refreshSystemStatus(); 
+                loadAttendanceHistory();
                 setupUserPWA();
             } else showToast(res?.message || "登入失敗", true);
         }
@@ -809,7 +824,7 @@
             if (res?.success) { 
                 showToast("已更新資料"); 
                 closeProfileModal(); 
-                // 更新本機快取
+                // 更新本機變數與本地存儲
                 Object.assign(currentUser, { 
                     Name: data.name, 
                     Instrument: data.instrument,
@@ -818,6 +833,7 @@
                     ID_Number: data.idNumber,
                     PrivacyConsent: consent ? "YES" : (currentUser.PrivacyConsent || "NO")
                 });
+                localStorage.setItem('user', JSON.stringify(currentUser));
                 setupDashboard(); 
             } else {
                 showToast(res?.message || "更新失敗", true);
@@ -1655,7 +1671,7 @@
             if (res?.success) { showToast("註冊成功"); switchAuthMode('login'); } else showToast(res.message || "註冊失敗", true);
         }
 
-        function handleLogout() { location.reload(); }
+        function handleLogout() { localStorage.removeItem('user'); location.reload(); }
         function closeEditModal() { 
             const modal = document.getElementById('edit-modal');
             if (modal) {
