@@ -855,10 +855,10 @@
                 if (res?.success && res.content) {
                     // --- 檢查是否有新公告並觸發推播 (PWA) ---
                     const lastContent = localStorage.getItem('last_announcement');
-                    if (lastContent && lastContent !== res.content) {
-                        showLocalNotification("崇正國樂團：新公告", res.content.substring(0, 40) + "...");
+                    if (lastContent && lastContent !== String(res.content)) {
+                        showLocalNotification("崇正國樂團：新公告", String(res.content).substring(0, 40) + "...");
                     }
-                    localStorage.setItem('last_announcement', res.content);
+                    localStorage.setItem('last_announcement', String(res.content));
 
                     if (board) board.classList.remove('hidden');
                     if (contentEl) {
