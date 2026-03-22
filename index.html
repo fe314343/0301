@@ -695,8 +695,16 @@
             if (nameInput) nameInput.value = currentUser.Name || "";
             if (profileInitial) profileInitial.innerText = (currentUser.Name || "?").charAt(0);
             if (roleEl) roleEl.innerText = currentUser.Role || "Member";
-            if (emailEl) emailEl.innerText = currentUser.Email || "";
+            if (emailEl) emailEl.innerText = (currentUser.Email || "").toLowerCase();
             if (sectionEl) sectionEl.innerText = currentUser.Section || "-";
+
+            // --- 新增：載入個資 ---
+            const phoneInput = document.getElementById('profile-phone');
+            const bdayInput = document.getElementById('profile-birthday');
+            const idInput = document.getElementById('profile-id-number');
+            if (phoneInput) phoneInput.value = currentUser.Phone || "";
+            if (bdayInput) bdayInput.value = currentUser.Birthday || "";
+            if (idInput) idInput.value = currentUser.ID_Number || "";
 
             if (instSelect) {
                 instSelect.innerHTML = (orchestraData[currentUser.Section] || []).map(i => `<option value="${i}" ${i === currentUser.Instrument ? 'selected' : ''}>${i}</option>`).join('');
@@ -731,10 +739,88 @@
         async function handleUpdatePassword() {
             const name = document.getElementById('profile-name-input')?.value || currentUser.Name;
             const inst = document.getElementById('profile-instrument-input')?.value || currentUser.Instrument;
+            const phone = document.getElementById('profile-phone')?.value || "";
+            const bday = document.getElementById('profile-birthday')?.value || "";
+            const idNum = document.getElementById('profile-id-number')?.value || "";
             const pwd = document.getElementById('profile-new-password')?.value || "";
-            const res = await callBackend('saveMember', { email: currentUser.Email, name, instrument: inst, password: pwd });
-            if (res?.success) { showToast("已更新資料"); closeProfileModal(); currentUser.Name = name; currentUser.Instrument = inst; setupDashboard(); }
-            else showToast("更新失敗", true);
+            
+            // 暫存資料用於最後送出
+            window.pendingProfileData = { name, instrument: inst, phone, birthday: bday, idNumber: idNum, password: pwd };
+
+            // 判斷是否需要跳出個資授權 (如果有填寫敏感資料，且之前沒同意過)
+            const hasSensitive = phone || bday || idNum;
+            const alreadyConsented = currentUser.PrivacyConsent && currentUser.PrivacyConsent !== "NO";
+            
+            if (hasSensitive && !alreadyConsented) {
+                openPrivacyModal();
+            } else {
+                submitFinalProfile();
+            }
+        }
+
+        async function submitFinalProfile(consent = false) {
+            const data = window.pendingProfileData;
+            if (!data) return;
+            
+            const btn = document.getElementById('update-password-btn');
+            const origText = btn.innerText;
+            btn.disabled = true; btn.innerText = "儲存中...";
+
+            const res = await callBackend('saveMember', { 
+                email: currentUser.Email, 
+                name: data.name, 
+                instrument: data.instrument, 
+                password: data.password,
+                phone: data.phone,
+                birthday: data.birthday,
+                idNumber: data.idNumber,
+                privacyConsent: consent ? "YES" : (currentUser.PrivacyConsent || "NO")
+            });
+
+            btn.disabled = false; btn.innerText = origText;
+
+            if (res?.success) { 
+                showToast("已更新資料"); 
+                closeProfileModal(); 
+                // 更新本機快取
+                Object.assign(currentUser, { 
+                    Name: data.name, 
+                    Instrument: data.instrument,
+                    Phone: data.phone,
+                    Birthday: data.birthday,
+                    ID_Number: data.idNumber,
+                    PrivacyConsent: consent ? "YES" : (currentUser.PrivacyConsent || "NO")
+                });
+                setupDashboard(); 
+            } else {
+                showToast(res?.message || "更新失敗", true);
+            }
+        }
+
+        function openPrivacyModal() {
+            const modal = document.getElementById('privacy-modal');
+            const check = document.getElementById('privacy-agree-check');
+            if (check) check.checked = false;
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closePrivacyModal() {
+            const modal = document.getElementById('privacy-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
+
+        function confirmPrivacyConsent() {
+            const check = document.getElementById('privacy-agree-check');
+            if (!check || !check.checked) return showToast("請先勾選同意條款", true);
+            
+            closePrivacyModal();
+            submitFinalProfile(true);
         }
 
         async function refreshSystemStatus() {
@@ -1720,6 +1806,14 @@
                 <div id="profile-notif-row" class="space-y-1 hidden">
                     <button onclick="requestNotificationPermission(true)" class="w-full py-4 bg-white text-indigo-600 rounded-[18px] font-black text-xs flex items-center justify-center gap-2 border border-slate-100 shadow-sm"><i data-lucide="bell" class="w-4 h-4"></i>開啟通知功能</button>
                 </div>
+                
+                <!-- 新增：個資管理欄位 -->
+                <div class="space-y-3 p-4 bg-slate-50/50 rounded-[24px] border border-slate-100">
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">連絡電話</label><input type="tel" id="profile-phone" class="w-full px-4 py-3 rounded-xl bg-white border-none outline-none text-xs font-bold" placeholder="未填寫"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">出生日期</label><input type="date" id="profile-birthday" class="w-full px-4 py-3 rounded-xl bg-white border-none outline-none text-xs font-bold"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">身分證字號 (投保必填)</label><input type="text" id="profile-id-number" class="w-full px-4 py-3 rounded-xl bg-white border-none outline-none text-xs font-bold" placeholder="A123456789"></div>
+                </div>
+
                 <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">變更密碼</label><input type="password" id="profile-new-password" class="w-full px-4 py-3.5 rounded-2xl bg-slate-100 outline-none border-none text-xs font-bold text-center" placeholder="不變請留空"></div>
                 <div class="pt-6 flex gap-3">
                     <button onclick="location.reload(true)" class="flex-1 py-3.5 bg-slate-100 text-slate-500 font-black rounded-2xl text-xs">強制重整</button>
@@ -1827,6 +1921,27 @@
                 <button onclick="closeSurveyModal()" class="py-4 px-5 bg-white text-slate-500 rounded-[20px] font-black text-sm border border-slate-200">取消</button>
                 <button id="survey-next-btn" onclick="surveyGoNext()" class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">下一步 →</button>
                 <button id="save-survey-btn" onclick="handleSaveSurvey()" class="hidden flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">提交回覆</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 個資授權同意書 Modal -->
+    <div id="privacy-modal" class="hidden fixed inset-0 z-[20000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up flex flex-col max-h-[85vh]">
+            <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i data-lucide="shield-alert" class="w-6 h-6 text-indigo-500"></i>個資使用授權同意</h3>
+            <div id="privacy-content" class="flex-1 overflow-y-auto bg-slate-50 p-5 rounded-2xl text-xs leading-relaxed text-slate-600 font-bold mb-6 custom-scrollbar">
+                <!-- 這裡未來可由後端動態載入或靜態填寫 -->
+                <p class="mb-4">本團因辦理團練、表演投保及行政聯繫之需，需搜集您的姓名、身分證字號、出生日期、連絡電話等個人資料。</p>
+                <p class="mb-4">我們將嚴格遵守個資法相關規定，僅於必要範圍內進行處理與利用，並採取適當安全措施防止洩漏。</p>
+                <p>點擊「同意」即代表您授權本團於上述範圍內使用您的個人資料。</p>
+            </div>
+            <div class="flex items-center gap-3 mb-6 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                <input type="checkbox" id="privacy-agree-check" class="w-5 h-5 accent-indigo-600 shrink-0">
+                <label for="privacy-agree-check" class="text-xs font-black text-slate-700 cursor-pointer">我已閱讀並同意上述條款</label>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="closePrivacyModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">先不要</button>
+                <button id="privacy-submit-btn" onclick="confirmPrivacyConsent()" class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">同意並送出</button>
             </div>
         </div>
     </div>
