@@ -753,6 +753,8 @@
                     const input = document.getElementById('bypass-code-input');
                     if (input) input.value = res.bypassCode;
                 }
+                // 同步更新公告
+                fetchAnnouncement();
             }
         }
 
@@ -1554,8 +1556,19 @@
                     // 登入後自動詢問推播權限
                     if (currentUser) {
                         requestNotificationPermission();
-                        // 每 1 分鐘輪詢一次公告 (模擬即時推播)
-                        setInterval(fetchAnnouncement, 60 * 1000);
+                        // 立即抓取一次公告
+                        fetchAnnouncement();
+                        // 每 20 秒輪詢一次公告 (原為 60 秒)
+                        setInterval(fetchAnnouncement, 20 * 1000);
+
+                        // 監聽視窗回到焦點時自動刷新
+                        document.addEventListener('visibilitychange', () => {
+                            if (document.visibilityState === 'visible') {
+                                console.log("App focused - auto-fetching announcement");
+                                fetchAnnouncement();
+                                refreshSystemStatus();
+                            }
+                        });
                     }
                 } catch (e) { console.error('SW registration failed:', e); }
             }
