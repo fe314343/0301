@@ -723,9 +723,36 @@
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
+                switchProfileTab('basic'); // 每次開啟都重置到基本資料
             }
             safeCreateIcons();
             requestNotificationPermission();
+        }
+
+        function switchProfileTab(tab) {
+            const basicTab = document.getElementById('profile-tab-basic');
+            const personalTab = document.getElementById('profile-tab-personal');
+            const basicBtn = document.getElementById('tab-btn-basic');
+            const personalBtn = document.getElementById('tab-btn-personal');
+            
+            if (!basicTab || !personalTab) return;
+
+            if (tab === 'basic') {
+                basicTab.classList.remove('hidden');
+                personalTab.classList.add('hidden');
+                basicBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+                basicBtn.classList.remove('text-slate-400');
+                personalBtn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                personalBtn.classList.add('text-slate-400');
+            } else {
+                basicTab.classList.add('hidden');
+                personalTab.classList.remove('hidden');
+                personalBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+                personalBtn.classList.remove('text-slate-400');
+                basicBtn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                basicBtn.classList.add('text-slate-400');
+                safeCreateIcons();
+            }
         }
 
         function closeProfileModal() {
@@ -1793,12 +1820,18 @@
                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">個人姓名 (限本人修改)</label>
                 <input type="text" id="profile-name-input" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-none outline-none font-[900] text-xl text-center text-slate-800 shadow-inner">
             </div>
-            <div class="w-full space-y-4">
+            <!-- 新增：分頁切換器 -->
+            <div class="flex w-full bg-slate-100 p-1.5 rounded-[22px] mb-6 gap-1">
+                <button onclick="switchProfileTab('basic')" id="tab-btn-basic" class="flex-1 py-2.5 rounded-[18px] text-[10px] font-black transition-all bg-white text-indigo-600 shadow-sm">基本資料</button>
+                <button onclick="switchProfileTab('personal')" id="tab-btn-personal" class="flex-1 py-2.5 rounded-[18px] text-[10px] font-black transition-all text-slate-400">個資管理</button>
+            </div>
+
+            <div id="profile-tab-basic" class="w-full space-y-4">
                 <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">角色/權限</label><div id="profile-role" class="w-full px-4 py-3.5 bg-slate-50 rounded-2xl text-sm font-bold text-center text-indigo-600">Member</div></div>
                 <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">主要樂器</label><select id="profile-instrument-input" class="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-center appearance-none shadow-sm"></select></div>
                 <div class="flex justify-between items-center p-4 bg-slate-50 rounded-[20px] text-center"><span class="text-[10px] font-black text-slate-500 uppercase text-center">組別</span><span class="text-sm font-bold text-slate-700 text-center" id="profile-section-display">-</span></div>
                 <div class="p-4 bg-indigo-50/50 rounded-[20px] text-left space-y-2">
-                    <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">系統診斷 v10</p>
+                    <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">系統診斷 v15</p>
                     <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">PWA 模式</span><span id="diag-pwa" class="text-slate-600">-</span></div>
                     <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">通知支援</span><span id="diag-support" class="text-slate-600">-</span></div>
                     <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">權限狀態</span><span id="diag-permission" class="text-slate-600">-</span></div>
@@ -1806,21 +1839,29 @@
                 <div id="profile-notif-row" class="space-y-1 hidden">
                     <button onclick="requestNotificationPermission(true)" class="w-full py-4 bg-white text-indigo-600 rounded-[18px] font-black text-xs flex items-center justify-center gap-2 border border-slate-100 shadow-sm"><i data-lucide="bell" class="w-4 h-4"></i>開啟通知功能</button>
                 </div>
-                
-                <!-- 新增：個資管理欄位 -->
-                <div class="space-y-3 p-4 bg-slate-50/50 rounded-[24px] border border-slate-100">
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">連絡電話</label><input type="tel" id="profile-phone" class="w-full px-4 py-3 rounded-xl bg-white border-none outline-none text-xs font-bold" placeholder="未填寫"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">出生日期</label><input type="date" id="profile-birthday" class="w-full px-4 py-3 rounded-xl bg-white border-none outline-none text-xs font-bold"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">身分證字號 (投保必填)</label><input type="text" id="profile-id-number" class="w-full px-4 py-3 rounded-xl bg-white border-none outline-none text-xs font-bold" placeholder="A123456789"></div>
-                </div>
-
                 <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">變更密碼</label><input type="password" id="profile-new-password" class="w-full px-4 py-3.5 rounded-2xl bg-slate-100 outline-none border-none text-xs font-bold text-center" placeholder="不變請留空"></div>
-                <div class="pt-6 flex gap-3">
-                    <button onclick="location.reload(true)" class="flex-1 py-3.5 bg-slate-100 text-slate-500 font-black rounded-2xl text-xs">強制重整</button>
-                    <button id="update-password-btn" onclick="handleUpdatePassword()" class="flex-[2] py-3.5 btn-premium text-white font-black rounded-2xl text-xs">更新資料</button>
+            </div>
+
+            <!-- 個資管理分頁 -->
+            <div id="profile-tab-personal" class="hidden w-full space-y-4">
+                <div class="p-5 bg-amber-50 rounded-[28px] border border-amber-100 mb-2">
+                    <p class="text-[10px] font-bold text-amber-700 leading-relaxed text-left">
+                        <i data-lucide="info" class="w-3 h-3 inline-block mr-1"></i> 填寫下列個資主要用於演出保險投保，系統將進行加密傳輸與保護。
+                    </p>
+                </div>
+                <!-- 新增：個資管理欄位 -->
+                <div class="space-y-4 p-5 bg-slate-50/50 rounded-[30px] border border-slate-100">
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">連絡電話</label><input type="tel" id="profile-phone" class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm" placeholder="未填寫"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">出生日期</label><input type="date" id="profile-birthday" class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm"></div>
+                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">身分證字號</label><input type="text" id="profile-id-number" class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm" placeholder="A123456789"></div>
                 </div>
             </div>
-            <button onclick="closeProfileModal()" class="mt-8 text-slate-400 text-[10px] font-black uppercase">返回</button>
+
+            <div class="pt-6 w-full flex gap-3">
+                <button onclick="location.reload(true)" class="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-[22px] text-xs">強制重整</button>
+                <button id="update-password-btn" onclick="handleUpdatePassword()" class="flex-[2] py-4 btn-premium text-white font-black rounded-[22px] text-xs shadow-lg">更新資料</button>
+            </div>
+            <button onclick="closeProfileModal()" class="mt-8 text-slate-400 text-[10px] font-black uppercase tracking-widest">返回主頁面</button>
         </div>
     </div>
 
