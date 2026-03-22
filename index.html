@@ -1087,8 +1087,18 @@
             if (presentEl) presentEl.innerText = presentCount;
             if (absentEl) absentEl.innerText = absentCount;
             
-            if (sort === 'checkin') list.sort((a, b) => (a.status === '檢視簽到' || a.status === '已簽到' ? -1 : 1));
-            else if (sort === 'absence') list.sort((a, b) => (b.absenceCount || 0) - (a.absenceCount || 0));
+            if (sort === 'checkin') list.sort((a, b) => (a.status === '已簽到' ? -1 : 1));
+            else if (sort === 'absence') {
+                list.sort((a, b) => {
+                    // 1. 目前狀態優先 (未簽到/缺席 放在前面)
+                    const aMissing = a.status !== '已簽到';
+                    const bMissing = b.status !== '已簽到';
+                    if (aMissing && !bMissing) return -1;
+                    if (!aMissing && bMissing) return 1;
+                    // 2. 若狀態相同，則看缺席次數 (多到少)
+                    return (b.absenceCount || 0) - (a.absenceCount || 0);
+                });
+            }
             
             if (listEl) listEl.innerHTML = list.map(m => {
                 const abs = m.absenceCount || 0;
