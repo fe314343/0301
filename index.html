@@ -718,7 +718,12 @@
             const bdayInput = document.getElementById('profile-birthday');
             const idInput = document.getElementById('profile-id-number');
             if (phoneInput) phoneInput.value = currentUser.Phone || "";
-            if (bdayInput) bdayInput.value = currentUser.Birthday || "";
+            if (bdayInput) {
+                let d = currentUser.Birthday;
+                // 若為 ISO 格式 (Google Sheets 日期格式)，截取 YYYY-MM-DD 部分
+                if (d && typeof d === 'string' && d.includes('T')) d = d.split('T')[0];
+                bdayInput.value = d || "";
+            }
             if (idInput) idInput.value = currentUser.ID_Number || "";
 
             if (instSelect) {
