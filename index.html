@@ -1138,15 +1138,31 @@
         }
 
         async function handleSaveAnnouncement() {
-            const content = document.getElementById('announcement-edit-input')?.value.trim() || "";
+            const input = document.getElementById('announcement-edit-input');
+            const content = input?.value.trim() || "";
+            console.log("Saving announcement:", content);
             if (!content) return showToast("內容不可為空", true);
-            const btn = document.getElementById('save-announcement-btn'); setBtnLoading(btn, true, "發布中...");
+            
+            const btn = document.getElementById('save-announcement-btn');
+            setBtnLoading(btn, true, "發布中...");
+            
             try {
                 const res = await callBackend('saveAnnouncement', { content });
-                if (res?.success) { showToast("公告發布成功"); closeAnnouncementModal(); fetchAnnouncement(); }
-                else showToast("發布失敗", true);
-            } catch (e) { showToast("連線異常", true); }
-            finally { setBtnLoading(btn, false, "發布公告"); }
+                console.log("Save announcement result:", res);
+                if (res?.success) {
+                    showToast("公告發布成功");
+                    closeAnnouncementModal();
+                    fetchAnnouncement();
+                    if (input) input.value = ""; // 清空
+                } else {
+                    showToast(res?.message || "發布失敗", true);
+                }
+            } catch (e) {
+                console.error("handleSaveAnnouncement Error:", e);
+                showToast("連線異常", true);
+            } finally {
+                setBtnLoading(btn, false, "發布公告");
+            }
         }
 
         async function loadEventList() {
@@ -1695,8 +1711,20 @@
 
         function handleLogout() { location.reload(); }
         function closeEditModal() { document.getElementById('edit-modal')?.classList.add('hidden'); }
-        function openAnnouncementModal() { document.getElementById('announcement-modal')?.classList.remove('hidden'); safeCreateIcons(); }
-        function closeAnnouncementModal() { document.getElementById('announcement-modal')?.classList.add('hidden'); }
+        function openAnnouncementModal() {
+            const modal = document.getElementById('announcement-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                console.log("Announcement modal opened");
+                safeCreateIcons();
+            } else {
+                console.error("Modal not found: announcement-modal");
+                showToast("系統錯誤：找不到公告視窗", true);
+            }
+        }
+        function closeAnnouncementModal() {
+            document.getElementById('announcement-modal')?.classList.add('hidden');
+        }
         function closeSurveyAdminModal() { document.getElementById('survey-admin-modal')?.classList.add('hidden'); }
         function addSurveyQuestion() { adminQuestions.push({ id: 'q' + Date.now(), label: "新題目", type: "text", options: "", required: false, condition: null, branches: {} }); renderAdminQuestions(); }
         function addSurveySection() { adminQuestions.push({ id: 's' + Date.now(), label: "新區段", type: "section" }); renderAdminQuestions(); }
