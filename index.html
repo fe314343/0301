@@ -693,26 +693,6 @@
             </div>
         </div>
 
-        <!-- 公告編輯 Modal -->
-        <div id="announcement-modal"
-            class="hidden fixed inset-0 z-[999] flex items-center justify-center p-6 shadow-2xl">
-            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" style="pointer-events: auto;" onclick="closeAnnouncementModal()"></div>
-            <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up" style="z-index: 1000;">
-                <h3
-                    class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2">
-                    <i data-lucide="megaphone" class="w-6 h-6 text-amber-500"></i>發布全員公告
-                </h3>
-                <textarea id="announcement-edit-input"
-                    class="w-full h-40 px-6 py-5 rounded-[22px] bg-slate-50 border-none outline-none font-bold text-sm text-slate-700 shadow-inner resize-none mb-6"
-                    placeholder="請輸入公告內容..."></textarea>
-                <div class="flex gap-4">
-                    <button onclick="closeAnnouncementModal()"
-                        class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
-                    <button id="save-announcement-btn" onclick="handleSaveAnnouncement()"
-                        class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">發布公告</button>
-                </div>
-            </div>
-        </div>
 
         <!-- 問卷填寫 Modal -->
         <div id="survey-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center p-6 shadow-2xl">
@@ -1716,17 +1696,24 @@
 
         function handleLogout() { location.reload(); }
         function closeEditModal() { document.getElementById('edit-modal')?.classList.add('hidden'); }
+
         function openAnnouncementModal() {
             const modal = document.getElementById('announcement-modal');
             if (modal) {
+                // 強制隱藏所有可能衝突的 Modal
+                document.querySelectorAll('[id$="-modal"]').forEach(m => m.classList.add('hidden'));
+                
                 modal.classList.remove('hidden');
-                console.log("Announcement modal opened");
-                safeCreateIcons();
+                modal.style.display = 'flex'; // 強制排版
+                
+                console.log("Announcement modal opened - Forced Flex");
+                setTimeout(() => { safeCreateIcons(); }, 50);
             } else {
                 console.error("Modal not found: announcement-modal");
                 showToast("系統錯誤：找不到公告視窗", true);
             }
         }
+
         function closeAnnouncementModal() {
             document.getElementById('announcement-modal')?.classList.add('hidden');
         }
@@ -1811,6 +1798,26 @@
             }
         }
     </script>
-</body>
 
+    <!-- 公告編輯 Modal (放在外部確保 z-index) -->
+    <div id="announcement-modal"
+        class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" style="pointer-events: auto;" onclick="closeAnnouncementModal()"></div>
+        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up" style="z-index: 10001;">
+            <h3
+                class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2">
+                <i data-lucide="megaphone" class="w-6 h-6 text-amber-500"></i>發布全員公告
+            </h3>
+            <textarea id="announcement-edit-input"
+                class="w-full h-40 px-6 py-5 rounded-[22px] bg-slate-50 border-none outline-none font-bold text-sm text-slate-700 shadow-inner resize-none mb-6"
+                placeholder="請輸入公告內容..."></textarea>
+            <div class="flex gap-4">
+                <button onclick="closeAnnouncementModal()"
+                    class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
+                <button id="save-announcement-btn" onclick="handleSaveAnnouncement()"
+                    class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">發布公告</button>
+            </div>
+        </div>
+    </div>
+</body>
 </html>
