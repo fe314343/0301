@@ -569,8 +569,12 @@
                             placeholder="不變請留空">
                     </div>
                     <div class="pt-6">
+                    <div class="flex gap-3">
+                        <button onclick="location.reload(true)"
+                        class="flex-1 py-3.5 bg-slate-100 text-slate-500 font-black rounded-2xl text-xs active:scale-95">強制重整</button>
                         <button id="update-password-btn" onclick="handleUpdatePassword()"
-                        class="w-full py-3.5 btn-premium text-white font-black rounded-2xl text-xs shadow-lg">更新資料</button>
+                        class="flex-[2] py-3.5 btn-premium text-white font-black rounded-2xl text-xs shadow-lg">更新資料</button>
+                    </div>
                 </div>
                 <button onclick="closeProfileModal()"
                     class="mt-8 text-slate-400 text-[10px] font-black uppercase text-center">返回</button>
