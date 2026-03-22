@@ -628,6 +628,8 @@
             if (res?.success) {
                 currentUser = res.user; setupDashboard(); switchView('dashboard-view');
                 switchTab('home'); refreshSystemStatus(); loadAttendanceHistory();
+                // 啟動 PWA 使用者相關功能 (輪詢、推播)
+                setupUserPWA();
             } else showToast(res?.message || "登入失敗", true);
         }
 
@@ -837,22 +839,31 @@
         }
 
         async function fetchAnnouncement() {
-            const res = await callBackend('getAnnouncement', {});
-            const board = document.getElementById('announcement-board');
-            if (res?.success && res.content) {
-                // --- 檢查是否有新公告並觸發推播 (PWA) ---
-                const lastContent = localStorage.getItem('last_announcement');
-                if (lastContent && lastContent !== res.content) {
-                    showLocalNotification("崇正國樂團：新公告", res.content.substring(0, 40) + "...");
-                }
-                localStorage.setItem('last_announcement', res.content);
+            try {
+                const res = await callBackend('getAnnouncement', {});
+                console.log("Fetch Announcement Raw Res:", res);
+                const board = document.getElementById('announcement-board');
+                if (res?.success && res.content) {
+                    // --- 檢查是否有新公告並觸發推播 (PWA) ---
+                    const lastContent = localStorage.getItem('last_announcement');
+                    if (lastContent && lastContent !== res.content) {
+                        showLocalNotification("崇正國樂團：新公告", res.content.substring(0, 40) + "...");
+                    }
+                    localStorage.setItem('last_announcement', res.content);
 
-                if (board) board.classList.remove('hidden');
-                const contentEl = document.getElementById('announcement-content'), timeEl = document.getElementById('announcement-time');
-                if (contentEl) contentEl.innerText = res.content;
-                const formattedTime = formatDateTime(res.updateTime);
-                if (timeEl) timeEl.innerText = formattedTime ? `最後更新: ${formattedTime}` : "";
-            } else { if (board) board.classList.add('hidden'); }
+                    if (board) board.classList.remove('hidden');
+                    const contentEl = document.getElementById('announcement-content'), timeEl = document.getElementById('announcement-time');
+                    if (contentEl) contentEl.innerText = res.content;
+                    const formattedTime = formatDateTime(res.updateTime);
+                    if (timeEl) timeEl.innerText = formattedTime ? `最後更新: ${formattedTime}` : "";
+                    console.log("Announcement Board Visible: true");
+                } else { 
+                    console.log("Announcement Board Visible: false (res fail or empty)");
+                    if (board) board.classList.add('hidden'); 
+                }
+            } catch (e) {
+                console.error("fetchAnnouncement Error:", e);
+            }
         }
 
         async function showLocalNotification(title, body) {
@@ -1553,25 +1564,34 @@
                 try {
                     const reg = await navigator.serviceWorker.register('sw.js');
                     console.log('ServiceWorker registered:', reg);
-                    // 登入後自動詢問推播權限
+                    // 如果已經登入了，直接啟動
                     if (currentUser) {
-                        requestNotificationPermission();
-                        // 立即抓取一次公告
-                        fetchAnnouncement();
-                        // 每 20 秒輪詢一次公告 (原為 60 秒)
-                        setInterval(fetchAnnouncement, 20 * 1000);
-
-                        // 監聽視窗回到焦點時自動刷新
-                        document.addEventListener('visibilitychange', () => {
-                            if (document.visibilityState === 'visible') {
-                                console.log("App focused - auto-fetching announcement");
-                                fetchAnnouncement();
-                                refreshSystemStatus();
-                            }
-                        });
+                        setupUserPWA();
                     }
                 } catch (e) { console.error('SW registration failed:', e); }
             }
+        }
+
+        // PWA 使用者相關功能 (登入後或重啟頁面且已登入時觸發)
+        let isPWAUserSetupDone = false;
+        async function setupUserPWA() {
+            if (isPWAUserSetupDone) return;
+            isPWAUserSetupDone = true;
+            console.log("Setting up User PWA features...");
+            
+            requestNotificationPermission();
+            // 立即輪詢一次公告
+            fetchAnnouncement();
+            setInterval(fetchAnnouncement, 20 * 1000);
+
+            // 監聽視窗回到焦點時自動刷新
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    console.log("App focused - auto-fetching");
+                    fetchAnnouncement();
+                    refreshSystemStatus();
+                }
+            });
         }
 
         async function requestNotificationPermission(isManual = false) {
