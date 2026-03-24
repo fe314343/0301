@@ -1449,6 +1449,22 @@
 
         function renderQInput(q, prevVal) {
             const qId = q.id || q.label;
+            
+            // --- 新增：自動帶入個人資料邏輯 ---
+            if (!prevVal && currentUser) {
+                const labelStr = String(q.label || "").toLowerCase();
+                if (labelStr.includes("姓名") || labelStr.includes("名字") || labelStr === "name") {
+                    prevVal = currentUser.Name || "";
+                } else if (labelStr.includes("手機") || labelStr.includes("電話") || labelStr.includes("連絡") || labelStr.includes("聯絡") || labelStr.includes("phone")) {
+                    prevVal = currentUser.Phone || "";
+                } else if (labelStr.includes("身分證") || labelStr.includes("身份證") || labelStr.includes("id")) {
+                    prevVal = currentUser.ID_Number || "";
+                } else if (labelStr.includes("生日") || labelStr.includes("出生") || labelStr.includes("birthday")) {
+                    let d = currentUser.Birthday;
+                    if (d && typeof d === 'string' && d.includes('T')) d = d.split('T')[0];
+                    prevVal = d || "";
+                }
+            }
             if (q.type === 'date') {
                 return `<input type="date" data-qid="${qId}" data-label="${q.label}" value="${prevVal}" class="survey-input w-full px-5 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-sm" onchange="evaluateSurveyConditions()">`;
             } else if (q.type === 'yesno') {
