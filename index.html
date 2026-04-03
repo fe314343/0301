@@ -268,15 +268,18 @@
             <!-- 全局提示區 -->
             <div id="global-alerts" class="w-full space-y-3">
                 <!-- 通知權限提醒 -->
-                <div id="notif-permission-banner" class="hidden glass-panel p-4 rounded-2xl bg-amber-50 border-amber-200 mb-6 flex justify-between items-center shadow-sm">
+                <div id="notif-permission-banner"
+                    class="hidden glass-panel p-4 rounded-2xl bg-amber-50 border-amber-200 mb-6 flex justify-between items-center shadow-sm">
                     <div class="flex items-center gap-3">
-                        <div class="bg-amber-100 p-2 rounded-xl text-amber-600 shadow-sm"><i data-lucide="bell-ring" class="w-5 h-5"></i></div>
+                        <div class="bg-amber-100 p-2 rounded-xl text-amber-600 shadow-sm"><i data-lucide="bell-ring"
+                                class="w-5 h-5"></i></div>
                         <div class="text-left">
                             <p class="text-xs font-black text-slate-800">未開啟公告通知</p>
                             <p class="text-[9px] text-slate-500 font-bold uppercase tracking-tight">點擊右側按鈕以獲得即時團練提醒</p>
                         </div>
                     </div>
-                    <button onclick="requestNotificationPermission(true)" class="bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 shrink-0">立即開啟</button>
+                    <button onclick="requestNotificationPermission(true)"
+                        class="bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md active:scale-95 shrink-0">立即開啟</button>
                 </div>
                 <div id="announcement-board"
                     class="w-full glass-panel p-5 rounded-[28px] border-amber-200 bg-amber-50 shadow-md flex items-start gap-4 transition-all hover:shadow-lg text-left">
@@ -454,7 +457,8 @@
                 </div>
 
                 <!-- 系統授權碼設定 (僅管理員可見) -->
-                <div id="admin-bypass-config" class="hidden glass-panel p-6 rounded-[32px] w-full shadow-lg border-white/40 bg-indigo-50/30">
+                <div id="admin-bypass-config"
+                    class="hidden glass-panel p-6 rounded-[32px] w-full shadow-lg border-white/40 bg-indigo-50/30">
                     <div class="flex items-center gap-2 mb-4">
                         <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
                             <i data-lucide="shield-check" class="w-4 h-4"></i>
@@ -462,7 +466,7 @@
                         <h4 class="font-[900] text-slate-700 text-sm tracking-tight">系統授權碼設定</h4>
                     </div>
                     <div class="flex gap-2">
-                        <input type="text" id="bypass-code-input" placeholder="演出授權碼" 
+                        <input type="text" id="bypass-code-input" placeholder="演出授權碼"
                             class="flex-1 px-5 py-3.5 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm">
                         <button onclick="handleSaveBypassCode()" id="btn-save-bypass"
                             class="px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-xs shadow-md active:scale-95 transition-all">儲存</button>
@@ -534,8 +538,8 @@
         // --- 新增：從本地存儲恢復登入狀態 ---
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-            try { 
-                currentUser = JSON.parse(storedUser); 
+            try {
+                currentUser = JSON.parse(storedUser);
                 console.log("Restored user from storage:", currentUser);
             } catch (e) { localStorage.removeItem('user'); }
         }
@@ -636,13 +640,13 @@
             setBtnLoading(btn, false, "立即登入");
             if (res?.success) {
                 // 修正：從 res.userData 讀取，並存入 localStorage
-                currentUser = res.userData; 
+                currentUser = res.userData;
                 localStorage.setItem('user', JSON.stringify(currentUser));
-                
-                setupDashboard(); 
+
+                setupDashboard();
                 switchView('dashboard-view');
-                switchTab('home'); 
-                refreshSystemStatus(); 
+                switchTab('home');
+                refreshSystemStatus();
                 loadAttendanceHistory();
                 setupUserPWA();
             } else showToast(res?.message || "登入失敗", true);
@@ -754,7 +758,7 @@
             const personalTab = document.getElementById('profile-tab-personal');
             const basicBtn = document.getElementById('tab-btn-basic');
             const personalBtn = document.getElementById('tab-btn-personal');
-            
+
             if (!basicTab || !personalTab) return;
 
             if (tab === 'basic') {
@@ -790,14 +794,14 @@
             const bday = document.getElementById('profile-birthday')?.value || "";
             const idNum = document.getElementById('profile-id-number')?.value || "";
             const pwd = document.getElementById('profile-new-password')?.value || "";
-            
+
             // 暫存資料用於最後送出
             window.pendingProfileData = { name, instrument: inst, phone, birthday: bday, idNumber: idNum, password: pwd };
 
             // 判斷是否需要跳出個資授權 (如果有填寫敏感資料，且之前沒同意過)
             const hasSensitive = phone || bday || idNum;
             const alreadyConsented = currentUser.PrivacyConsent && currentUser.PrivacyConsent !== "NO";
-            
+
             if (hasSensitive && !alreadyConsented) {
                 openPrivacyModal();
             } else {
@@ -808,15 +812,15 @@
         async function submitFinalProfile(consent = false) {
             const data = window.pendingProfileData;
             if (!data) return;
-            
+
             const btn = document.getElementById('update-password-btn');
             const origText = btn.innerText;
             btn.disabled = true; btn.innerText = "儲存中...";
 
-            const res = await callBackend('saveMember', { 
-                email: currentUser.Email, 
-                name: data.name, 
-                instrument: data.instrument, 
+            const res = await callBackend('saveMember', {
+                email: currentUser.Email,
+                name: data.name,
+                instrument: data.instrument,
                 password: data.password,
                 phone: data.phone,
                 birthday: data.birthday,
@@ -826,12 +830,12 @@
 
             btn.disabled = false; btn.innerText = origText;
 
-            if (res?.success) { 
-                showToast("已更新資料"); 
-                closeProfileModal(); 
+            if (res?.success) {
+                showToast("已更新資料");
+                closeProfileModal();
                 // 更新本機變數與本地存儲
-                Object.assign(currentUser, { 
-                    Name: data.name, 
+                Object.assign(currentUser, {
+                    Name: data.name,
                     Instrument: data.instrument,
                     Phone: data.phone,
                     Birthday: data.birthday,
@@ -839,7 +843,7 @@
                     PrivacyConsent: consent ? "YES" : (currentUser.PrivacyConsent || "NO")
                 });
                 localStorage.setItem('user', JSON.stringify(currentUser));
-                setupDashboard(); 
+                setupDashboard();
             } else {
                 showToast(res?.message || "更新失敗", true);
             }
@@ -852,6 +856,7 @@
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
+                safeCreateIcons();
             }
         }
 
@@ -866,7 +871,7 @@
         function confirmPrivacyConsent() {
             const check = document.getElementById('privacy-agree-check');
             if (!check || !check.checked) return showToast("請先勾選同意條款", true);
-            
+
             closePrivacyModal();
             submitFinalProfile(true);
         }
@@ -940,7 +945,7 @@
             try {
                 const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000 }));
                 const dist = (function (lat1, lon1, lat2, lon2) { const R = 6371e3; const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180; const df = (lat2 - lat1) * Math.PI / 180, dl = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(df / 2) * Math.sin(df / 2) + Math.cos(f1) * Math.cos(f2) * Math.sin(dl / 2) * Math.sin(dl / 2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); })(pos.coords.latitude, pos.coords.longitude, ALLOWED_LOCATIONS[0].lat, ALLOWED_LOCATIONS[0].lng);
-                
+
                 if (dist > MAX_DISTANCE) {
                     // 原本顯示距離，改為統一文字
                     const userInput = prompt("不在崇正寶宮\n若為外部演出，請輸入演出授權碼簽到：");
@@ -952,7 +957,7 @@
                         btn.disabled = false; btn.innerHTML = oldH; safeCreateIcons(); return;
                     }
                 }
-                
+
                 const res = await callBackend('submitCheckin', { email: currentUser.Email, name: currentUser.Name, section: currentUser.Section, date: currentEventData.eventDate, eventName: currentEventData.eventName, eventTimeRange: `${currentEventData.eventStart} ~ ${currentEventData.eventEnd}` });
                 if (res?.success) { showToast("簽到成功！排練愉快"); currentEventData.hasCheckedIn = true; updateCheckinBtnStatus(true); setTimeout(() => { refreshSystemStatus(); loadAttendanceHistory(); }, 1500); }
                 else showToast(res.message || "簽到失敗", true);
@@ -976,7 +981,7 @@
             const board = document.getElementById('announcement-board');
             const contentEl = document.getElementById('announcement-content');
             const timeEl = document.getElementById('announcement-time');
-            
+
             try {
                 // 如果是第一次載入且看板還沒顯示，可以先顯示「載入中」
                 if (board && board.classList.contains('hidden')) {
@@ -985,7 +990,7 @@
 
                 const res = await callBackend('getAnnouncement', {});
                 console.log("Fetch Announcement Raw Res:", res);
-                
+
                 if (res?.success && res.content) {
                     // --- 檢查是否有新公告並觸發推播 (PWA) ---
                     const lastContent = localStorage.getItem('last_announcement');
@@ -1005,13 +1010,13 @@
                 } else if (res?.success && !res.content) {
                     // 成功但沒內容 -> 隱藏
                     console.log("Announcement Board Visible: false (empty content)");
-                    if (board) board.classList.add('hidden'); 
+                    if (board) board.classList.add('hidden');
                 } else {
                     // 失敗
                     console.log("Announcement Board Fetch Failed:", res?.message);
                     // 只有在已經有內容的情況下才顯示錯誤，否則保持隱藏
                     if (board && !board.classList.contains('hidden')) {
-                         if (contentEl) contentEl.innerText = "公告更新失敗：" + (res?.message || "不明錯誤");
+                        if (contentEl) contentEl.innerText = "公告更新失敗：" + (res?.message || "不明錯誤");
                     }
                 }
             } catch (e) {
@@ -1035,12 +1040,12 @@
                     const reg = await navigator.serviceWorker.ready;
                     if (reg && reg.showNotification) {
                         console.log("Using Service Worker showNotification");
-                        await reg.showNotification(title, { 
-                            body, 
-                            icon: "icon-192.png", 
-                            badge: "icon-192.png", 
-                            vibrate: [200, 100, 200, 100, 500], 
-                            data: { url: window.location.href } 
+                        await reg.showNotification(title, {
+                            body,
+                            icon: "icon-192.png",
+                            badge: "icon-192.png",
+                            vibrate: [200, 100, 200, 100, 500],
+                            data: { url: window.location.href }
                         });
                         return;
                     }
@@ -1048,7 +1053,7 @@
                 // 備援：一般桌面通知
                 console.log("Using fallback new Notification()");
                 new Notification(title, { body, icon: "icon-192.png" });
-            } catch (e) { 
+            } catch (e) {
                 console.error("Notification failed:", e);
                 showToast("通知發送失敗: " + e.message, true);
             }
@@ -1081,10 +1086,10 @@
             const content = input?.value.trim() || "";
             console.log("Saving announcement:", content);
             if (!content) return showToast("內容不可為空", true);
-            
+
             const btn = document.getElementById('save-announcement-btn');
             setBtnLoading(btn, true, "發布中...");
-            
+
             try {
                 const res = await callBackend('saveAnnouncement', { content });
                 console.log("Save announcement result:", res);
@@ -1126,10 +1131,10 @@
                                     ${isActive ? '<p class="text-[9px] text-emerald-500 font-black mt-1 uppercase tracking-tighter">● 正在廣播中</p>' : ''}
                                 </div>
                                 <div class="flex gap-2">
-                                    ${isActive 
-                                        ? `<button onclick="deactivateEventFromList()" class="flex-1 py-3 bg-rose-50 text-rose-600 rounded-2xl active:scale-95 text-[10px] font-black border border-rose-100">停止廣播</button>`
-                                        : `<button onclick="activateEventFromList('${ev.ID}')" class="flex-1 py-3 bg-amber-50 text-amber-600 rounded-2xl active:scale-95 text-[10px] font-black border border-amber-100">廣播</button>`
-                                    }
+                                    ${isActive
+                                    ? `<button onclick="deactivateEventFromList()" class="flex-1 py-3 bg-rose-50 text-rose-600 rounded-2xl active:scale-95 text-[10px] font-black border border-rose-100">停止廣播</button>`
+                                    : `<button onclick="activateEventFromList('${ev.ID}')" class="flex-1 py-3 bg-amber-50 text-amber-600 rounded-2xl active:scale-95 text-[10px] font-black border border-amber-100">廣播</button>`
+                                }
                                     ${isActuallyAdmin ? `<button onclick="openEditModal('${ev.ID}')" class="flex-1 py-3 bg-indigo-50 rounded-2xl text-indigo-600 active:scale-95 text-[10px] font-black border border-indigo-100">編輯</button>` : ''}
                                 </div>
                             </div>`;
@@ -1204,15 +1209,15 @@
             const section = filterEl ? filterEl.value : 'all';
             const sort = document.getElementById('monitor-sort-order')?.value || 'default';
             const listEl = document.getElementById('realtime-status-list');
-            
-            if (!cachedMemberList || cachedMemberList.length === 0) { 
-                if (listEl) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前無成員資料</div>'; 
-                return; 
+
+            if (!cachedMemberList || cachedMemberList.length === 0) {
+                if (listEl) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前無成員資料</div>';
+                return;
             }
-            
+
             let list = [...cachedMemberList];
             if (section !== 'all') list = list.filter(m => m.Section === section);
-            
+
             // --- 更新組別統計數字 ---
             const presentCount = list.filter(m => m.status === '已簽到').length;
             const absentCount = list.length - presentCount;
@@ -1220,7 +1225,7 @@
             const absentEl = document.getElementById('stat-absent');
             if (presentEl) presentEl.innerText = presentCount;
             if (absentEl) absentEl.innerText = absentCount;
-            
+
             if (sort === 'checkin') list.sort((a, b) => (a.status === '已簽到' ? -1 : 1));
             else if (sort === 'absence') {
                 list.sort((a, b) => {
@@ -1233,7 +1238,7 @@
                     return (b.absenceCount || 0) - (a.absenceCount || 0);
                 });
             }
-            
+
             if (listEl) listEl.innerHTML = list.map(m => {
                 const abs = m.absenceCount || 0;
                 return `<div class="bg-white/70 p-4 rounded-2xl flex justify-between items-center text-left"><div class="flex flex-col gap-1"><p class="font-black text-slate-800 text-xs">${m.Name} <span class="text-[9px] text-slate-400">(${m.Instrument})</span></p><p class="text-[10px] font-black ${getAbsenceColorClass(abs)}">缺 ${abs}</p></div><div class="text-right"><span class="text-xs font-black ${m.status === '已簽到' ? 'text-emerald-500' : 'text-rose-400'}">${m.status}</span></div></div>`
@@ -1260,16 +1265,16 @@
             const sur = id ? allSurveys.find(s => String(s.ID) === String(id)) : null;
             const fields = { 'sur-admin-title': 'Title', 'sur-admin-desc': 'Description', 'sur-admin-embed-url': 'EmbedURL' };
             const isActuallyAdmin = currentUser && currentUser.Role === 'Admin';
-            
-            for (let id in fields) { 
-                const el = document.getElementById(id); 
+
+            for (let id in fields) {
+                const el = document.getElementById(id);
                 if (el) {
-                    el.value = sur ? (sur[fields[id]] || "") : ""; 
+                    el.value = sur ? (sur[fields[id]] || "") : "";
                     el.readOnly = !isActuallyAdmin;
                     el.classList.toggle('bg-slate-100', !isActuallyAdmin);
                 }
             }
-            
+
             const addSecBtn = document.querySelector('button[onclick="addSurveySection()"]');
             const addQueBtn = document.querySelector('button[onclick="addSurveyQuestion()"]');
             if (addSecBtn) addSecBtn.classList.toggle('hidden', !isActuallyAdmin);
@@ -1449,7 +1454,7 @@
 
         function renderQInput(q, prevVal) {
             const qId = q.id || q.label;
-            
+
             // --- 新增：自動帶入個人資料邏輯 ---
             if (!prevVal && currentUser) {
                 const labelStr = String(q.label || "").toLowerCase();
@@ -1693,7 +1698,7 @@
         }
 
         function handleLogout() { localStorage.removeItem('user'); location.reload(); }
-        function closeEditModal() { 
+        function closeEditModal() {
             const modal = document.getElementById('edit-modal');
             if (modal) {
                 modal.classList.add('hidden');
@@ -1706,10 +1711,10 @@
             if (modal) {
                 // 強制隱藏所有可能衝突的 Modal
                 document.querySelectorAll('[id$="-modal"]').forEach(m => m.classList.add('hidden'));
-                
+
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex'; // 強制排版
-                
+
                 console.log("Announcement modal opened - Forced Flex");
                 setTimeout(() => { safeCreateIcons(); }, 50);
             } else {
@@ -1725,7 +1730,7 @@
                 modal.style.display = 'none'; // 重置行內樣式
             }
         }
-        function closeSurveyAdminModal() { 
+        function closeSurveyAdminModal() {
             const modal = document.getElementById('survey-admin-modal');
             if (modal) {
                 modal.classList.add('hidden');
@@ -1747,7 +1752,7 @@
                 try {
                     const reg = await navigator.serviceWorker.register('sw.js');
                     console.log('ServiceWorker registered:', reg);
-                    
+
                     // 偵測 Service Worker 更新
                     reg.onupdatefound = () => {
                         const installingWorker = reg.installing;
@@ -1774,7 +1779,7 @@
             if (isPWAUserSetupDone) return;
             isPWAUserSetupDone = true;
             console.log("Setting up User PWA features...");
-            
+
             requestNotificationPermission();
             // 立即輪詢一次公告
             fetchAnnouncement();
@@ -1792,14 +1797,14 @@
 
         async function requestNotificationPermission(isManual = false) {
             if (!("Notification" in window)) return;
-            
+
             const banner = document.getElementById('notif-permission-banner');
             const profileRow = document.getElementById('profile-notif-row');
 
             // iOS 檢查
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-            
+
             // 如果已經開啟，全部隱藏
             if (Notification.permission === "granted") {
                 banner?.classList.add('hidden');
@@ -1844,39 +1849,137 @@
                 } catch (e) { console.error("Permission request failed", e); }
             }
         }
+
+        function downloadPrivacyConsent() {
+            const consentText = `崇正國樂團 個人資料蒐集、處理及利用同意書\n\n為完善本團團務管理、提升練習成效及辦理各項演出行政庶務，崇正國樂團（以下簡稱本團）依據《個人資料保護法》第 8 條規定，向您告知下列事項：\n\n一、 蒐集之目的\n1. 團員行政管理： 包含團員名冊建立、聯絡通訊、排練與演出通知。\n2. 保險與行政申報： 用於演出意外險投保、政府補助計畫申請、車資或演出費領據核銷。\n3. 數位考勤與學習追蹤： 紀錄簽到紀錄、請假紀錄。\n4. 聲部編制與評鑑： 紀錄所屬聲部項目（吹管、拉弦、彈撥、打擊、低音等）及演出表現評核。\n5. 影像紀錄： 排練或演出期間之攝影與錄影，用於成果展示、非營利宣傳及教學存檔。\n\n二、 蒐集之個人資料類別\n本團將透過系統或表單蒐集以下資料，並採取適當之安全措施妥善保管：\n• 基本辨識： 姓名、身分證字號（或護照號碼）、聯絡電話、電子郵件、通訊地址。\n• 特徵資訊： 出生年月日、性別。\n• 團務資訊： 所屬聲部與樂器名稱、入團日期、職位（團員/組長/幹部）。\n• 活動紀錄： 出缺席紀錄、簽到時間、作業繳交紀錄、排練/演出之影像紀錄。\n\n三、 利用之期間、地區、對象及方式\n1. 期間： 自您加入本團起，至您退團後三年止（或依法令規定之會計憑證保存年限）。\n2. 地區： 中華民國（台灣）境內及本團租用之加密雲端儲存空間。\n3. 對象： 本團行政管理人員、各聲部組長（組長僅限查閱其管轄成員之考勤與聲部資料，無法查閱身分證字號等高度敏感資料）。\n4. 方式： 以數位資料庫（如 Google Sheets、Google Apps Script 加密管控）或紙本方式進行蒐集與處理。\n\n四、 資料安全防護承諾\n本團承諾對於所蒐集之高度敏感個資（如身分證字號、生日）採取嚴格之存取控制。相關資料僅限授權行政人員因公務需要（如保險）時調閱，嚴禁挪作他用。\n\n五、 您的權利與影響\n1. 您得依個資法第 3 條行使查詢、閱覽、補充、更正、停止蒐集處理利用，或請求刪除之權利。\n2. 若您拒絕提供正確之身分證字號、生日或電話，本團將無法為您辦理演出保險。\n\n本人已充分瞭解上述告知事項，並同意 崇正國樂團 蒐集、處理及利用本人之個人資料。`;
+            const blob = new Blob([consentText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '崇正國樂團_個人資料同意書.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("同意書下載成功");
+        }
+
+        function printPrivacyConsent() {
+            const printWindow = window.open('', '_blank');
+            const consentContent = `
+                <html>
+                <head>
+                    <title>崇正國樂團 個人資料蒐集同意書</title>
+                    <style>
+                        body { font-family: sans-serif; padding: 40px; line-height: 1.6; color: #333; }
+                        h1 { text-align: center; font-size: 20px; }
+                        h2 { font-size: 16px; margin-top: 20px; }
+                        li { margin-bottom: 8px; }
+                        .footer { margin-top: 40px; text-align: right; border-top: 1px solid #ccc; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>崇正國樂團 個人資料蒐集、處理及利用同意書</h1>
+                    <p>為完善本團團務管理、提升練習成效及辦理各項演出行政庶務，崇正國樂團（以下簡稱本團）依據《個人資料保護法》第 8 條規定，向您告知下列事項：</p>
+                    <h2>一、 蒐集之目的</h2>
+                    <ul>
+                        <li>團員行政管理： 包含團員名冊建立、聯絡通訊、排練與演出通知。</li>
+                        <li>保險與行政申報： 用於演出意外險投保、政府補助計畫申請、車資或演出費領據核銷。</li>
+                        <li>數位考勤與學習追蹤： 紀錄簽到紀錄、請假紀錄。</li>
+                        <li>聲部編制與評鑑： 紀錄所屬聲部項目（吹管、拉弦、彈撥、打擊、低音等）及演出表現評核。</li>
+                        <li>影像紀錄： 排練或演出期間之攝影與錄影，用於成果展示、非營利宣傳及教學存檔。</li>
+                    </ul>
+                    <h2>二、 蒐集之個人資料類別</h2>
+                    <p>本團將透過系統或表單蒐集以下資料，並採取適當之安全措施妥善保管：</p>
+                    <ul>
+                        <li>基本辨識： 姓名、身分證字號（或護照號碼）、聯絡電話、電子郵件、通訊地址。</li>
+                        <li>特徵資訊： 出生年月日、性別。</li>
+                        <li>團務資訊： 所屬聲部與樂器名稱、入團日期、職位（團員/組長/幹部）。</li>
+                        <li>活動紀錄： 出缺席紀錄、簽到時間、作業繳交紀錄、排練/演出之影像紀錄。</li>
+                    </ul>
+                    <h2>三、 利用之期間、地區、對象及方式</h2>
+                    <ul>
+                        <li>期間： 自您加入本團起，至您退團後三年止。</li>
+                        <li>地區： 中華民國（台灣）境內及本團租用之加密雲端儲存空間。</li>
+                        <li>對象： 本團行政管理人員、各聲部組長。</li>
+                        <li>方式： 以數位資料庫或紙本方式進行蒐集與處理。</li>
+                    </ul>
+                    <h2>四、 資料安全防護承諾</h2>
+                    <p>本團承諾對於所蒐集之高度敏感個資採取嚴格之存取控制。相關資料僅限授權行政人員因公務需要時調閱，嚴禁挪作他用。</p>
+                    <h2>五、 您的權利與影響</h2>
+                    <ol>
+                        <li>您得依個資法第 3 條行使查詢、閱覽、補充、更正、停止蒐集處理利用，或請求刪除之權利。</li>
+                        <li>若您拒絕提供正確之身分證字號、生日或電話，本團將無法為您辦理演出保險。</li>
+                    </ol>
+                    <div class="footer">
+                        <p>本人已充分瞭解上述告知事項，並同意 崇正國樂團 蒐集、處理及利用本人之個人資料。</p>
+                    </div>
+                    <script>window.print();<\/script>
+                </body>
+                </html>
+            `;
+            printWindow.document.write(consentContent);
+            printWindow.document.close();
+        }
     </script>
 
     <!-- 所有 Modal 統一放置於底部確保 z-index 正常 -->
-    
+
     <!-- 個人資料編輯 Modal -->
     <div id="profile-modal" class="hidden fixed inset-0 z-[10100] flex items-center justify-center p-6 shadow-2xl">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeProfileModal()"></div>
-        <div class="bg-white w-full max-w-sm rounded-[40px] shadow-2xl p-8 relative fade-up flex flex-col items-center" style="z-index: 10106;">
-            <div class="w-24 h-24 rounded-[32px] bg-slate-800 text-white flex items-center justify-center font-[900] text-3xl mb-4 shadow-xl border-4 border-white" id="profile-initial">-</div>
+        <div class="bg-white w-full max-w-sm rounded-[40px] shadow-2xl p-8 relative fade-up flex flex-col items-center"
+            style="z-index: 10106;">
+            <div class="w-24 h-24 rounded-[32px] bg-slate-800 text-white flex items-center justify-center font-[900] text-3xl mb-4 shadow-xl border-4 border-white"
+                id="profile-initial">-</div>
             <div class="w-full space-y-2 mb-6 text-center">
-                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">個人姓名 (限本人修改)</label>
-                <input type="text" id="profile-name-input" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-none outline-none font-[900] text-xl text-center text-slate-800 shadow-inner">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">個人姓名
+                    (限本人修改)</label>
+                <input type="text" id="profile-name-input"
+                    class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-none outline-none font-[900] text-xl text-center text-slate-800 shadow-inner">
             </div>
             <!-- 新增：分頁切換器 -->
             <div class="flex w-full bg-slate-100 p-1.5 rounded-[22px] mb-6 gap-1">
-                <button onclick="switchProfileTab('basic')" id="tab-btn-basic" class="flex-1 py-2.5 rounded-[18px] text-[10px] font-black transition-all bg-white text-indigo-600 shadow-sm">基本資料</button>
-                <button onclick="switchProfileTab('personal')" id="tab-btn-personal" class="flex-1 py-2.5 rounded-[18px] text-[10px] font-black transition-all text-slate-400">個資管理</button>
+                <button onclick="switchProfileTab('basic')" id="tab-btn-basic"
+                    class="flex-1 py-2.5 rounded-[18px] text-[10px] font-black transition-all bg-white text-indigo-600 shadow-sm">基本資料</button>
+                <button onclick="switchProfileTab('personal')" id="tab-btn-personal"
+                    class="flex-1 py-2.5 rounded-[18px] text-[10px] font-black transition-all text-slate-400">個資管理</button>
             </div>
 
             <div id="profile-tab-basic" class="w-full space-y-4">
-                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">角色/權限</label><div id="profile-role" class="w-full px-4 py-3.5 bg-slate-50 rounded-2xl text-sm font-bold text-center text-indigo-600">Member</div></div>
-                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">主要樂器</label><select id="profile-instrument-input" class="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-center appearance-none shadow-sm"></select></div>
-                <div class="flex justify-between items-center p-4 bg-slate-50 rounded-[20px] text-center"><span class="text-[10px] font-black text-slate-500 uppercase text-center">組別</span><span class="text-sm font-bold text-slate-700 text-center" id="profile-section-display">-</span></div>
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">角色/權限</label>
+                    <div id="profile-role"
+                        class="w-full px-4 py-3.5 bg-slate-50 rounded-2xl text-sm font-bold text-center text-indigo-600">
+                        Member</div>
+                </div>
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">主要樂器</label><select
+                        id="profile-instrument-input"
+                        class="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border-none outline-none font-bold text-center appearance-none shadow-sm"></select>
+                </div>
+                <div class="flex justify-between items-center p-4 bg-slate-50 rounded-[20px] text-center"><span
+                        class="text-[10px] font-black text-slate-500 uppercase text-center">組別</span><span
+                        class="text-sm font-bold text-slate-700 text-center" id="profile-section-display">-</span></div>
                 <div class="p-4 bg-indigo-50/50 rounded-[20px] text-left space-y-2">
                     <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">系統診斷 v15</p>
-                    <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">PWA 模式</span><span id="diag-pwa" class="text-slate-600">-</span></div>
-                    <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">通知支援</span><span id="diag-support" class="text-slate-600">-</span></div>
-                    <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">權限狀態</span><span id="diag-permission" class="text-slate-600">-</span></div>
+                    <div class="flex justify-between text-[10px] font-bold"><span class="text-slate-400">PWA
+                            模式</span><span id="diag-pwa" class="text-slate-600">-</span></div>
+                    <div class="flex justify-between text-[10px] font-bold"><span
+                            class="text-slate-400">通知支援</span><span id="diag-support" class="text-slate-600">-</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-bold"><span
+                            class="text-slate-400">權限狀態</span><span id="diag-permission" class="text-slate-600">-</span>
+                    </div>
                 </div>
                 <div id="profile-notif-row" class="space-y-1 hidden">
-                    <button onclick="requestNotificationPermission(true)" class="w-full py-4 bg-white text-indigo-600 rounded-[18px] font-black text-xs flex items-center justify-center gap-2 border border-slate-100 shadow-sm"><i data-lucide="bell" class="w-4 h-4"></i>開啟通知功能</button>
+                    <button onclick="requestNotificationPermission(true)"
+                        class="w-full py-4 bg-white text-indigo-600 rounded-[18px] font-black text-xs flex items-center justify-center gap-2 border border-slate-100 shadow-sm"><i
+                            data-lucide="bell" class="w-4 h-4"></i>開啟通知功能</button>
                 </div>
-                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">變更密碼</label><input type="password" id="profile-new-password" class="w-full px-4 py-3.5 rounded-2xl bg-slate-100 outline-none border-none text-xs font-bold text-center" placeholder="不變請留空"></div>
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-slate-400 uppercase px-1 text-center">變更密碼</label><input
+                        type="password" id="profile-new-password"
+                        class="w-full px-4 py-3.5 rounded-2xl bg-slate-100 outline-none border-none text-xs font-bold text-center"
+                        placeholder="不變請留空"></div>
             </div>
 
             <!-- 個資管理分頁 -->
@@ -1888,41 +1991,85 @@
                 </div>
                 <!-- 新增：個資管理欄位 -->
                 <div class="space-y-4 p-5 bg-slate-50/50 rounded-[30px] border border-slate-100">
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">連絡電話</label><input type="tel" id="profile-phone" class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm" placeholder="未填寫"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">出生日期</label><input type="date" id="profile-birthday" class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">身分證字號</label><input type="text" id="profile-id-number" class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm" placeholder="A123456789"></div>
+                    <div class="space-y-1"><label
+                            class="text-[10px] font-black text-slate-400 uppercase px-1">連絡電話</label><input type="tel"
+                            id="profile-phone"
+                            class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm"
+                            placeholder="未填寫"></div>
+                    <div class="space-y-1"><label
+                            class="text-[10px] font-black text-slate-400 uppercase px-1">出生日期</label><input type="date"
+                            id="profile-birthday"
+                            class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm">
+                    </div>
+                    <div class="space-y-1"><label
+                            class="text-[10px] font-black text-slate-400 uppercase px-1">身分證字號</label><input type="text"
+                            id="profile-id-number"
+                            class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm"
+                            placeholder="A123456789"></div>
                 </div>
+                <button onclick="openPrivacyModal()"
+                    class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-slate-200">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> 查看個資同意書
+                </button>
             </div>
 
             <div class="pt-6 w-full flex gap-3">
-                <button onclick="location.reload(true)" class="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-[22px] text-xs">強制重整</button>
-                <button id="update-password-btn" onclick="handleUpdatePassword()" class="flex-[2] py-4 btn-premium text-white font-black rounded-[22px] text-xs shadow-lg">更新資料</button>
+                <button onclick="location.reload(true)"
+                    class="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-[22px] text-xs">強制重整</button>
+                <button id="update-password-btn" onclick="handleUpdatePassword()"
+                    class="flex-[2] py-4 btn-premium text-white font-black rounded-[22px] text-xs shadow-lg">更新資料</button>
             </div>
-            <button onclick="closeProfileModal()" class="mt-8 text-slate-400 text-[10px] font-black uppercase tracking-widest">返回主頁面</button>
+            <button onclick="closeProfileModal()"
+                class="mt-8 text-slate-400 text-[10px] font-black uppercase tracking-widest">返回主頁面</button>
         </div>
     </div>
 
     <!-- 活動編輯 Modal -->
     <div id="edit-modal" class="hidden fixed inset-0 z-[10101] flex items-center justify-center p-6 shadow-2xl">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md text-center" onclick="closeEditModal()"></div>
-        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up text-center" style="z-index: 10106;">
+        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up text-center"
+            style="z-index: 10106;">
             <h3 id="modal-title" class="text-xl font-[900] text-slate-800 mb-6 tracking-tight">活動詳細設定</h3>
             <div class="space-y-4">
-                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">活動名稱</label><input type="text" id="edit-name" class="w-full px-6 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center shadow-inner"></div>
-                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">日期</label><input type="date" id="edit-date" class="w-full px-6 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center shadow-inner"></div>
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-slate-400 uppercase px-1">活動名稱</label><input type="text"
+                        id="edit-name"
+                        class="w-full px-6 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center shadow-inner">
+                </div>
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-slate-400 uppercase px-1">日期</label><input type="date"
+                        id="edit-date"
+                        class="w-full px-6 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center shadow-inner">
+                </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">開始</label><input type="time" id="edit-start" class="w-full px-5 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">結束</label><input type="time" id="edit-end" class="w-full px-5 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center"></div>
+                    <div class="space-y-1"><label
+                            class="text-[10px] font-black text-slate-400 uppercase px-1">開始</label><input type="time"
+                            id="edit-start"
+                            class="w-full px-5 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center"></div>
+                    <div class="space-y-1"><label
+                            class="text-[10px] font-black text-slate-400 uppercase px-1">結束</label><input type="time"
+                            id="edit-end"
+                            class="w-full px-5 py-4 rounded-[18px] bg-slate-50 border-none font-bold text-center"></div>
                 </div>
                 <!-- 新增：中場休息時間設定 -->
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">休息開始</label><input type="time" id="edit-rest-start" class="w-full px-5 py-4 rounded-[18px] bg-slate-100 border-none font-bold text-center opacity-70"></div>
-                    <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">休息結束</label><input type="time" id="edit-rest-end" class="w-full px-5 py-4 rounded-[18px] bg-slate-100 border-none font-bold text-center opacity-70"></div>
+                    <div class="space-y-1"><label
+                            class="text-[10px] font-black text-slate-400 uppercase px-1">休息開始</label><input type="time"
+                            id="edit-rest-start"
+                            class="w-full px-5 py-4 rounded-[18px] bg-slate-100 border-none font-bold text-center opacity-70">
+                    </div>
+                    <div class="space-y-1"><label
+                            class="text-[10px] font-black text-slate-400 uppercase px-1">休息結束</label><input type="time"
+                            id="edit-rest-end"
+                            class="w-full px-5 py-4 rounded-[18px] bg-slate-100 border-none font-bold text-center opacity-70">
+                    </div>
                 </div>
             </div>
             <div class="flex gap-4 mt-8">
-                <button onclick="closeEditModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
-                <button id="save-event-btn" onclick="saveEvent()" class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">儲存</button>
+                <button onclick="closeEditModal()"
+                    class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
+                <button id="save-event-btn" onclick="saveEvent()"
+                    class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">儲存</button>
             </div>
         </div>
     </div>
@@ -1931,11 +2078,16 @@
     <div id="announcement-modal" class="hidden fixed inset-0 z-[10102] flex items-center justify-center p-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeAnnouncementModal()"></div>
         <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up" style="z-index: 10106;">
-            <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i data-lucide="megaphone" class="w-6 h-6 text-amber-500"></i>發布全員公告</h3>
-            <textarea id="announcement-edit-input" class="w-full h-40 px-6 py-5 rounded-[22px] bg-slate-50 border-none outline-none font-bold text-sm text-slate-700 shadow-inner resize-none mb-6" placeholder="請輸入公告內容..."></textarea>
+            <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i
+                    data-lucide="megaphone" class="w-6 h-6 text-amber-500"></i>發布全員公告</h3>
+            <textarea id="announcement-edit-input"
+                class="w-full h-40 px-6 py-5 rounded-[22px] bg-slate-50 border-none outline-none font-bold text-sm text-slate-700 shadow-inner resize-none mb-6"
+                placeholder="請輸入公告內容..."></textarea>
             <div class="flex gap-4">
-                <button onclick="closeAnnouncementModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
-                <button id="save-announcement-btn" onclick="handleSaveAnnouncement()" class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm">發布</button>
+                <button onclick="closeAnnouncementModal()"
+                    class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
+                <button id="save-announcement-btn" onclick="handleSaveAnnouncement()"
+                    class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm">發布</button>
             </div>
         </div>
     </div>
@@ -1943,91 +2095,192 @@
     <!-- 問卷管理 Modal -->
     <div id="survey-admin-modal" class="hidden fixed inset-0 z-[10103] flex items-center justify-center p-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeSurveyAdminModal()"></div>
-        <div class="bg-white w-full max-w-lg rounded-[36px] shadow-2xl p-8 relative fade-up max-h-[90vh] flex flex-col" style="z-index: 10106;">
-            <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i data-lucide="settings-2" class="w-5 h-5 text-indigo-500"></i>問卷管理</h3>
-            
+        <div class="bg-white w-full max-w-lg rounded-[36px] shadow-2xl p-8 relative fade-up max-h-[90vh] flex flex-col"
+            style="z-index: 10106;">
+            <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i
+                    data-lucide="settings-2" class="w-5 h-5 text-indigo-500"></i>問卷管理</h3>
+
             <!-- 頁籤選擇 -->
             <div class="flex gap-2 p-1 bg-slate-100 rounded-[20px] mb-6 shadow-inner">
-                <button id="sur-tab-config" onclick="switchSurveyAdminTab('config')" class="flex-1 py-3 rounded-[16px] text-xs font-black transition-all bg-white text-indigo-600 shadow-sm">問卷設定</button>
-                <button id="sur-tab-result" onclick="switchSurveyAdminTab('result')" class="flex-1 py-3 rounded-[16px] text-xs font-black transition-all text-slate-500">回覆統計</button>
+                <button id="sur-tab-config" onclick="switchSurveyAdminTab('config')"
+                    class="flex-1 py-3 rounded-[16px] text-xs font-black transition-all bg-white text-indigo-600 shadow-sm">問卷設定</button>
+                <button id="sur-tab-result" onclick="switchSurveyAdminTab('result')"
+                    class="flex-1 py-3 rounded-[16px] text-xs font-black transition-all text-slate-500">回覆統計</button>
             </div>
 
             <!-- 設定頁面 -->
             <div id="sur-admin-config" class="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">問卷標題</label><input type="text" id="sur-admin-title" class="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner"></div>
-                <div class="space-y-1"><label class="text-[10px] font-black text-slate-400 uppercase px-1">問卷描述/導引文字</label><textarea id="sur-admin-desc" class="w-full h-24 px-5 py-4 rounded-2xl bg-slate-50 border-none font-bold text-sm resize-none" placeholder="給填寫者的說明..."></textarea></div>
-                <div class="space-y-1"><label class="text-[10px] font-black text-amber-500 uppercase px-1 flex items-center gap-1"><i data-lucide="link-2" class="w-3 h-3"></i> 外部問卷 URL (填入後將以此為主，不顯示下方題目)</label><input type="text" id="sur-admin-embed-url" class="w-full px-5 py-3 rounded-2xl bg-amber-50/50 border-none text-xs font-bold" placeholder="Google 表單網址等..."></div>
-                
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-slate-400 uppercase px-1">問卷標題</label><input type="text"
+                        id="sur-admin-title"
+                        class="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none font-bold text-sm shadow-inner">
+                </div>
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-slate-400 uppercase px-1">問卷描述/導引文字</label><textarea
+                        id="sur-admin-desc"
+                        class="w-full h-24 px-5 py-4 rounded-2xl bg-slate-50 border-none font-bold text-sm resize-none"
+                        placeholder="給填寫者的說明..."></textarea></div>
+                <div class="space-y-1"><label
+                        class="text-[10px] font-black text-amber-500 uppercase px-1 flex items-center gap-1"><i
+                            data-lucide="link-2" class="w-3 h-3"></i> 外部問卷 URL (填入後將以此為主，不顯示下方題目)</label><input
+                        type="text" id="sur-admin-embed-url"
+                        class="w-full px-5 py-3 rounded-2xl bg-amber-50/50 border-none text-xs font-bold"
+                        placeholder="Google 表單網址等..."></div>
+
                 <div class="pt-6 border-t border-slate-100">
                     <div class="flex items-center justify-between mb-4">
                         <label class="text-[10px] font-black text-slate-400 uppercase">設計問卷題目</label>
                         <div class="flex gap-2">
-                            <button onclick="addSurveySection()" class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black border border-indigo-100 hover:bg-indigo-100 active:scale-95 transition-all flex items-center gap-1"><i data-lucide="layout-panel-top" class="w-3 h-3"></i>+ 區段</button>
-                            <button onclick="addSurveyQuestion()" class="px-3 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i>+ 題目</button>
+                            <button onclick="addSurveySection()"
+                                class="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black border border-indigo-100 hover:bg-indigo-100 active:scale-95 transition-all flex items-center gap-1"><i
+                                    data-lucide="layout-panel-top" class="w-3 h-3"></i>+ 區段</button>
+                            <button onclick="addSurveyQuestion()"
+                                class="px-3 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center gap-1"><i
+                                    data-lucide="plus" class="w-3 h-3"></i>+ 題目</button>
                         </div>
                     </div>
                     <div id="sur-admin-questions-list" class="space-y-3"></div>
                 </div>
 
-                <div class="flex items-center justify-between p-5 bg-indigo-50/50 rounded-[24px] border border-indigo-100/50 mt-6"><div class="flex flex-col"><span class="text-sm font-black text-slate-700">對全員開放</span><span class="text-[9px] text-slate-400 font-bold">關閉後成員將看不到此問卷</span></div><input type="checkbox" id="sur-admin-status" class="w-6 h-6 accent-indigo-600"></div>
-                <button id="btn-save-sur-config" onclick="handleUpdateSurveyConfig()" class="w-full py-4 btn-premium text-white rounded-2xl font-black text-sm shadow-xl mt-4">儲存問卷設定</button>
+                <div
+                    class="flex items-center justify-between p-5 bg-indigo-50/50 rounded-[24px] border border-indigo-100/50 mt-6">
+                    <div class="flex flex-col"><span class="text-sm font-black text-slate-700">對全員開放</span><span
+                            class="text-[9px] text-slate-400 font-bold">關閉後成員將看不到此問卷</span></div><input type="checkbox"
+                        id="sur-admin-status" class="w-6 h-6 accent-indigo-600">
+                </div>
+                <button id="btn-save-sur-config" onclick="handleUpdateSurveyConfig()"
+                    class="w-full py-4 btn-premium text-white rounded-2xl font-black text-sm shadow-xl mt-4">儲存問卷設定</button>
             </div>
 
             <!-- 統計頁面 -->
             <div id="sur-admin-result" class="hidden flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                <div class="text-center py-10"><p class="text-sm font-bold text-slate-400">正在彙整回覆統計...</p></div>
+                <div class="text-center py-10">
+                    <p class="text-sm font-bold text-slate-400">正在彙整回覆統計...</p>
+                </div>
             </div>
 
-            <button onclick="closeSurveyAdminModal()" class="mt-6 text-slate-400 text-[10px] font-black uppercase self-center hover:text-slate-600 transition-colors">返回問卷列表</button>
+            <button onclick="closeSurveyAdminModal()"
+                class="mt-6 text-slate-400 text-[10px] font-black uppercase self-center hover:text-slate-600 transition-colors">返回問卷列表</button>
         </div>
     </div>
 
     <!-- 問卷填寫 Modal -->
     <div id="survey-modal" class="hidden fixed inset-0 z-[10104] flex items-center justify-center p-6 shadow-2xl">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeSurveyModal()"></div>
-        <div id="survey-modal-content" class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-0 relative fade-up flex flex-col transition-all duration-500 overflow-hidden max-h-[90vh]" style="z-index: 10106;">
+        <div id="survey-modal-content"
+            class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-0 relative fade-up flex flex-col transition-all duration-500 overflow-hidden max-h-[90vh]"
+            style="z-index: 10106;">
             <div class="p-8 pb-3 text-center">
                 <h3 id="survey-modal-title" class="text-xl font-[900] text-slate-800 mb-1 tracking-tight">調查</h3>
                 <p id="survey-modal-desc" class="text-xs text-slate-400"></p>
-                <div id="survey-section-indicator" class="hidden mt-3"><p id="survey-section-label" class="text-[10px] font-black text-indigo-500 uppercase"></p><div id="survey-section-dots" class="flex justify-center gap-1.5"></div></div>
+                <div id="survey-section-indicator" class="hidden mt-3">
+                    <p id="survey-section-label" class="text-[10px] font-black text-indigo-500 uppercase"></p>
+                    <div id="survey-section-dots" class="flex justify-center gap-1.5"></div>
+                </div>
             </div>
             <div id="survey-content-container" class="flex-1 overflow-y-auto px-8 pb-4">
                 <div id="survey-dynamic-fields" class="space-y-5"></div>
-                <div id="survey-iframe-container" class="hidden w-full h-[65vh] rounded-2xl overflow-hidden border border-slate-100 shadow-inner mt-4"><iframe id="survey-external-frame" src="" class="w-full h-full border-none"></iframe></div>
+                <div id="survey-iframe-container"
+                    class="hidden w-full h-[65vh] rounded-2xl overflow-hidden border border-slate-100 shadow-inner mt-4">
+                    <iframe id="survey-external-frame" src="" class="w-full h-full border-none"></iframe></div>
             </div>
             <div class="p-6 pt-4 flex gap-3 bg-slate-50/50 border-t border-slate-100">
-                <button onclick="closeSurveyModal()" class="py-4 px-5 bg-white text-slate-500 rounded-[20px] font-black text-sm border border-slate-200">取消</button>
-                <button id="survey-prev-btn" onclick="surveyGoPrev()" class="hidden py-4 px-5 bg-slate-100 text-slate-600 rounded-[20px] font-black text-sm">← 上一步</button>
-                <button id="survey-next-btn" onclick="surveyGoNext()" class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">下一步 →</button>
-                <button id="save-survey-btn" onclick="handleSaveSurvey()" class="hidden flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">提交回覆</button>
+                <button onclick="closeSurveyModal()"
+                    class="py-4 px-5 bg-white text-slate-500 rounded-[20px] font-black text-sm border border-slate-200">取消</button>
+                <button id="survey-prev-btn" onclick="surveyGoPrev()"
+                    class="hidden py-4 px-5 bg-slate-100 text-slate-600 rounded-[20px] font-black text-sm">←
+                    上一步</button>
+                <button id="survey-next-btn" onclick="surveyGoNext()"
+                    class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">下一步
+                    →</button>
+                <button id="save-survey-btn" onclick="handleSaveSurvey()"
+                    class="hidden flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">提交回覆</button>
             </div>
         </div>
     </div>
 
     <!-- 個資授權同意書 Modal -->
-    <div id="privacy-modal" class="hidden fixed inset-0 z-[20000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+    <div id="privacy-modal"
+        class="hidden fixed inset-0 z-[20000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
         <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up flex flex-col max-h-[85vh]">
-            <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i data-lucide="shield-alert" class="w-6 h-6 text-indigo-500"></i>個資使用授權同意</h3>
-            <div id="privacy-content" class="flex-1 overflow-y-auto bg-slate-50 p-5 rounded-2xl text-xs leading-relaxed text-slate-600 font-bold mb-6 custom-scrollbar">
-                <!-- 這裡未來可由後端動態載入或靜態填寫 -->
-                <p class="mb-4">本團因辦理團練、表演投保及行政聯繫之需，需搜集您的姓名、身分證字號、出生日期、連絡電話等個人資料。</p>
-                <p class="mb-4">我們將嚴格遵守個資法相關規定，僅於必要範圍內進行處理與利用，並採取適當安全措施防止洩漏。</p>
-                <p>點擊「同意」即代表您授權本團於上述範圍內使用您的個人資料。</p>
+            <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2">
+                <i data-lucide="shield-alert" class="w-6 h-6 text-indigo-500"></i>個資使用授權同意
+            </h3>
+            <div id="privacy-content"
+                class="flex-1 overflow-y-auto bg-slate-50 p-6 rounded-2xl text-[11px] leading-relaxed text-slate-600 font-bold mb-6 custom-scrollbar text-left">
+                <h4 class="text-sm font-black text-slate-800 mb-4 text-center">崇正國樂團 個人資料蒐集、處理及利用同意書</h4>
+                <p class="mb-4">為完善本團團務管理、提升練習成效及辦理各項演出行政庶務，崇正國樂團（以下簡稱本團）依據《個人資料保護法》第 8 條規定，向您告知下列事項：</p>
+
+                <p class="font-black text-slate-800 mb-2">一、 蒐集之目的</p>
+                <ul class="list-decimal pl-5 mb-4 space-y-1">
+                    <li>團員行政管理： 包含團員名冊建立、聯絡通訊、排練與演出通知。</li>
+                    <li>保險與行政申報： 用於演出意外險投保、政府補助計畫申請、車資或演出費領據核銷。</li>
+                    <li>數位考勤與學習追蹤： 紀錄簽到紀錄、請假紀錄。</li>
+                    <li>聲部編制與評鑑： 紀錄所屬聲部項目（吹管、拉弦、彈撥、打擊、低音等）及演出表現評核。</li>
+                    <li>影像紀錄： 排練或演出期間之攝影與錄影，用於成果展示、非營利宣傳及教學存檔。</li>
+                </ul>
+
+                <p class="font-black text-slate-800 mb-2">二、 蒐集之個人資料類別</p>
+                <p class="mb-2">本團將透過系統或表單蒐集以下資料，並採取適當之安全措施妥善保管：</p>
+                <ul class="list-disc pl-5 mb-4 space-y-1">
+                    <li>基本辨識： 姓名、身分證字號（或護照號碼）、聯絡電話、電子郵件、通訊地址。</li>
+                    <li>特徵資訊： 出生年月日、性別。</li>
+                    <li>團務資訊： 所屬聲部與樂器名稱、入團日期、職位（團員/組長/幹部）。</li>
+                    <li>活動紀錄： 出缺席紀錄、簽到時間、作業繳交紀錄、排練/演出之影像紀錄。</li>
+                </ul>
+
+                <p class="font-black text-slate-800 mb-2">三、 利用之期間、地區、對象及方式</p>
+                <ul class="list-decimal pl-5 mb-4 space-y-1">
+                    <li>期間： 自您加入本團起，至您退團後三年止。</li>
+                    <li>地區： 中華民國（台灣）境內及本團租用之加密雲端儲存空間。</li>
+                    <li>對象： 本團行政管理人員、各聲部組長。</li>
+                    <li>方式： 以數位資料庫或紙本方式進行蒐集與處理。</li>
+                </ul>
+
+                <p class="font-black text-slate-800 mb-2">四、 資料安全防護承諾</p>
+                <p class="mb-4">本團承諾對於所蒐集之高度敏感個資採取嚴格之存取控制。相關資料僅限授權行政人員因公務需要時調閱，嚴禁挪作他用。</p>
+
+                <p class="font-black text-slate-800 mb-2">五、 您的權利與影響</p>
+                <ul class="list-decimal pl-5 mb-4 space-y-1">
+                    <li>您得依個資法第 3 條行使查詢、閱覽、補充、更正、停止蒐集處理利用，或請求刪除之權利。</li>
+                    <li>若您拒絕提供正確之身分證字號、生日或電話，本團將無法為您辦理演出保險。</li>
+                </ul>
+
+                <div class="mt-6 pt-6 border-t border-slate-200">
+                    <p class="text-right italic">本人已充分瞭解上述告知事項，並同意 崇正國樂團 蒐集、處理及利用本人之個人資料。</p>
+                </div>
             </div>
-            <div class="flex items-center gap-3 mb-6 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-                <input type="checkbox" id="privacy-agree-check" class="w-5 h-5 accent-indigo-600 shrink-0">
-                <label for="privacy-agree-check" class="text-xs font-black text-slate-700 cursor-pointer">我已閱讀並同意上述條款</label>
+            <div class="flex flex-col gap-4 mb-6">
+                <div class="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                    <input type="checkbox" id="privacy-agree-check" class="w-5 h-5 accent-indigo-600 shrink-0">
+                    <label for="privacy-agree-check"
+                        class="text-xs font-black text-slate-700 cursor-pointer">我已閱讀並同意上述條款</label>
+                </div>
+                <div class="flex justify-center gap-4">
+                    <button onclick="downloadPrivacyConsent()"
+                        class="flex items-center gap-1.5 text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-2 rounded-xl border border-indigo-100 active:scale-95">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> 下載文字檔
+                    </button>
+                    <button onclick="printPrivacyConsent()"
+                        class="flex items-center gap-1.5 text-[10px] font-black text-slate-500 bg-slate-100 px-3 py-2 rounded-xl border border-slate-200 active:scale-95">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i> 列印文件
+                    </button>
+                </div>
             </div>
             <div class="flex gap-4">
-                <button onclick="closePrivacyModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">先不要</button>
-                <button id="privacy-submit-btn" onclick="confirmPrivacyConsent()" class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">同意並送出</button>
+                <button onclick="closePrivacyModal()"
+                    class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">先不要</button>
+                <button id="privacy-submit-btn" onclick="confirmPrivacyConsent()"
+                    class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">同意並送出</button>
             </div>
         </div>
     </div>
 
     <!-- Toast 通知 (最上層) -->
-    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 hidden flex items-center justify-center gap-3 px-6 py-4 rounded-[22px] glass-panel shadow-2xl z-[20000] border-white transition-all transform duration-500">
+    <div id="toast"
+        class="fixed top-12 left-1/2 -translate-x-1/2 hidden flex items-center justify-center gap-3 px-6 py-4 rounded-[22px] glass-panel shadow-2xl z-[20000] border-white transition-all transform duration-500">
         <i id="toast-icon" data-lucide="info"></i><span id="toast-msg" class="font-black text-sm"></span>
     </div>
 </body>
+
 </html>
