@@ -539,7 +539,8 @@ const SCRIPT_PROP = PropertiesService.getScriptProperties();
 const SERVICE_ACCOUNT = {
   "project_id": SCRIPT_PROP.getProperty("FIREBASE_PROJECT_ID") || "baiyang-co",
   "client_email": SCRIPT_PROP.getProperty("FIREBASE_CLIENT_EMAIL"),
-  "private_key": SCRIPT_PROP.getProperty("FIREBASE_PRIVATE_KEY")
+  // v43: 重要！自動修補私鑰中的換行符號，防止「引數無效：key」錯誤
+  "private_key": (SCRIPT_PROP.getProperty("FIREBASE_PRIVATE_KEY") || "").replace(/\\n/g, '\n')
 };
 
 
