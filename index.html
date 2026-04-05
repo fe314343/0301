@@ -580,32 +580,36 @@
                 
                 if (currentToken) {
                     console.log("✅ Device Token:", currentToken);
-                    
-                    // 確保能抓到信箱
                     const stored = JSON.parse(localStorage.getItem('user') || '{}');
                     const email = currentUser?.Email || currentUser?.email || stored.Email || stored.email;
                     
                     if (email) {
+                        showToast("⏳ 正在同步推播設定...");
                         await callBackend('updateDeviceToken', { 
                             email: email, 
                             token: currentToken 
                         });
+                        showToast("🎉 推播設定成功！您的裝置已可接收通知");
                         console.log("🎉 Token Successfully synced to Backend.");
                     } else {
-                        console.warn('❌ 抓不到使用者的 Email！無法更新 Token。');
+                        showToast("⚠️ 找不到登入信箱，請重新整理頁面", "warning");
                     }
                 } else {
-                    console.warn('⚠️ No registration token available. Request permission to generate one.');
+                    showToast("⚠️ 無法取得推播憑證，請再試一次", "warning");
                 }
             } catch (err) {
                 console.error('❌ An error occurred while retrieving token: ', err);
+                showToast("❌ 錯誤: " + err.message, "error");
             }
         }
 
         async function requestNotificationPermission(showFeedback = false) {
-            if (!("Notification" in window)) return;
+            if (!("Notification" in window)) {
+                showToast("❌ 您的瀏覽器不支援通知功能", "error");
+                return;
+            }
             if (Notification.permission === 'granted') {
-                if (showFeedback) showToast("通知權限已開啟");
+                if (showFeedback) showToast("✅ 通知權限已對齊");
                 getAndRegisterToken();
                 return;
             }
@@ -613,14 +617,14 @@
             try {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    showToast("通知功能已成功啟用！");
+                    showToast("✅ 已成功授權，正在取得憑證...");
                     document.getElementById('notif-permission-banner')?.classList.add('hidden');
                     getAndRegisterToken();
                 } else {
-                    if (showFeedback) showToast("通知權限被拒絕，請從瀏覽器設定開啟", true);
+                    showToast("❌ 您拒絕了授權，請至 iPhone 設定開啟通知", "error");
                 }
-            } catch (e) {
-                console.error("Permission error", e);
+            } catch (err) {
+                showToast("❌ 授權過程錯誤: " + err.message, "error");
             }
         }
 
