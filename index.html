@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v36</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v37</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -562,22 +562,16 @@
             measurementId: "G-8CF9E1E98E"
         };
         
-        // v36 穩定化：使用官方推薦的 urlBase64ToUint8Array 轉換方式
-        // 模組化版本 (v10 Modular) 在 getToken 中正式支援 Uint8Array
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-            return outputArray;
-        }
-
+        // v37 穩定化：回歸字串格式以符合 V1 API 的 Scalar 要求
         const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
         
-        // --- v36 核心：模組化認證注入 ---
-        // 我們將 getToken 邏輯移到 type="module" 腳本中，這裡僅定義調用點
-        window.getFCMTokenModular = null; // 將由下方的 script 填充
+        // --- v37 核心：環境守護者 ---
+        // 我們將不再使用複雜的 Uint8Array 轉換，而是直接讓環境的 atob 變聰明
+        const iosSafeAtob = (str) => {
+            return window.atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+        };
+        
+        window.getFCMTokenModular = null;
 
         // 初始化 Firebase 全域變數
         let messaging;
@@ -651,8 +645,8 @@
                 if (err.code === 'messaging/permission-blocked') {
                     showToast("❌ 通知權限已被瀏覽器封鎖", "error");
                 } else {
-                    showToast("❌ [v36] 憑證錯誤: " + err.message, "error");
-                    console.error("[v36 DEBUG] 完整報錯對象:", err);
+                    showToast("❌ [v37] 憑證錯誤: " + err.message, "error");
+                    console.error("[v37 DEBUG] 完整報錯對象:", err);
                 }
             }
         }
@@ -674,28 +668,27 @@
             measurementId: "G-8CF9E1E98E"
         };
         
-        const vapidV36 = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
+        const vapidV37 = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
 
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-            return outputArray;
-        }
-
-        const appV36 = initializeApp(configV36);
-        const messagingV36 = getMessaging(appV36);
+        const appV37 = initializeApp(configV36);
+        const messagingV37 = getMessaging(appV37);
 
         // 暴露給全域調用
         window.getFCMTokenModular = async (registration) => {
-            return await getToken(messagingV36, {
-                vapidKey: urlBase64ToUint8Array(vapidV36),
-                serviceWorkerRegistration: registration
-            });
+            // v37 終極修正：暫時修復 iOS atob 崩潰問題，同時傳入字串滿足 Scalar 要求
+            const originalAtob = window.atob;
+            try {
+                window.atob = (s) => originalAtob(s.replace(/-/g, '+').replace(/_/g, '/'));
+                console.log("[v37 DEBUG] 正在以字串格式獲取 Token...");
+                return await getToken(messagingV37, {
+                    vapidKey: vapidV37,
+                    serviceWorkerRegistration: registration
+                });
+            } finally {
+                window.atob = originalAtob; // 務必還原環境變數
+            }
         };
-        console.log("[v36 DEBUG] Modular SDK 已準備就緒");
+        console.log("[v37 DEBUG] Modular SDK 已準備就緒 (v37)");
     </script>
     <script>
         async function requestNotificationPermission(showFeedback = false) {
