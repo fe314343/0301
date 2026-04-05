@@ -564,7 +564,11 @@
 
         async function getAndRegisterToken() {
             try {
-                const currentToken = await messaging.getToken({ vapidKey: VAPID_KEY });
+                const registration = await navigator.serviceWorker.ready;
+                const currentToken = await messaging.getToken({ 
+                    vapidKey: VAPID_KEY, 
+                    serviceWorkerRegistration: registration 
+                });
                 if (currentToken) {
                     console.log("Device Token:", currentToken);
                     if (currentUser && currentUser.Email) {
