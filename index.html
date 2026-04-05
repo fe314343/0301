@@ -592,7 +592,7 @@
                 showToast("⏳ 正在取得裝置憑證...");
                 
                 const currentToken = await messaging.getToken({ 
-                    vapidKey: robustFCMDecode(VAPID_KEY), 
+                    vapidKey: robustFCMDecode(), 
                     serviceWorkerRegistration: registration 
                 });
                 
