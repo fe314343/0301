@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v24</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v25</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -560,37 +560,12 @@
             appId: "1:744052473577:web:ee5b767dfde9438af67a78",
             measurementId: "G-8CF9E1E98E"
         };
-        const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
+        // 直接使用二進制字節陣列，徹底繞過所有 Base64 解碼報錯
+        const VAPID_UINT8 = new Uint8Array([4,197,142,45,100,145,128,159,243,179,237,255,101,49,109,138,0,230,130,11,220,93,175,254,66,112,218,24,141,235,66,161,0,12,25,44,205,223,158,153,213,38,146,31,98,16,238,222,255,197,255,141,207,41,76,74,37,155,57,35,255,189,166,23,211]);
 
         function robustFCMDecode(base64String) {
-            const raw = base64String.replace(/[^A-Za-z0-9\-_]/g, '');
-            const paddingValue = (4 - (raw.length % 4)) % 4;
-            const padding = '='.repeat(paddingValue);
-            const base64 = (raw + padding).replace(/-/g, '+').replace(/_/g, '/');
-            
-            const lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-            const len = base64.length;
-            let bufferLength = len * 0.75;
-            if (base64.endsWith('==')) bufferLength -= 2;
-            else if (base64.endsWith('=')) bufferLength -= 1;
-            
-            const bytes = new Uint8Array(bufferLength);
-            let p = 0;
-            for (let i = 0; i < len; i += 4) {
-                const encoded1 = lookup.indexOf(base64[i]);
-                const encoded2 = lookup.indexOf(base64[i + 1]);
-                const encoded3 = lookup.indexOf(base64[i + 2]);
-                const encoded4 = lookup.indexOf(base64[i + 3]);
-                
-                bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
-                if (encoded3 !== -1 && p < bufferLength) {
-                    bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
-                    if (encoded4 !== -1 && p < bufferLength) {
-                        bytes[p++] = ((encoded3 & 3) << 6) | encoded4;
-                    }
-                }
-            }
-            return bytes;
+            // 此函式現在僅具備相容性，直接回傳預設好的二進位金鑰
+            return VAPID_UINT8;
         }
 
         // 初始化 Firebase
@@ -648,7 +623,7 @@
                 if (err.code === 'messaging/permission-blocked') {
                     showToast("❌ 通知權限已被瀏覽器封鎖", "error");
                 } else {
-                    showToast("❌ [v24] 憑證錯誤: " + err.message, "error");
+                    showToast("❌ [v25] 憑證錯誤: " + err.message, "error");
                 }
             }
         }
