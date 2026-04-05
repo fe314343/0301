@@ -564,24 +564,36 @@
 
         async function getAndRegisterToken() {
             try {
+                // 等待且強制取得最新的 Service Worker 註冊對象
                 const registration = await navigator.serviceWorker.ready;
+                
+                // 必須傳入 serviceWorkerRegistration，防止在 GitHub Pages 子目錄發生 404
                 const currentToken = await messaging.getToken({ 
                     vapidKey: VAPID_KEY, 
                     serviceWorkerRegistration: registration 
                 });
+                
                 if (currentToken) {
-                    console.log("Device Token:", currentToken);
-                    if (currentUser && currentUser.Email) {
+                    console.log("✅ Device Token:", currentToken);
+                    
+                    // 確保能抓到信箱
+                    const stored = JSON.parse(localStorage.getItem('user') || '{}');
+                    const email = currentUser?.Email || currentUser?.email || stored.Email || stored.email;
+                    
+                    if (email) {
                         await callBackend('updateDeviceToken', { 
-                            email: currentUser.Email, 
+                            email: email, 
                             token: currentToken 
                         });
+                        console.log("🎉 Token Successfully synced to Backend.");
+                    } else {
+                        console.warn('❌ 抓不到使用者的 Email！無法更新 Token。');
                     }
                 } else {
-                    console.warn('No registration token available. Request permission to generate one.');
+                    console.warn('⚠️ No registration token available. Request permission to generate one.');
                 }
             } catch (err) {
-                console.error('An error occurred while retrieving token. ', err);
+                console.error('❌ An error occurred while retrieving token: ', err);
             }
         }
 
