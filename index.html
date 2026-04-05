@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v34</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v35</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -561,23 +561,14 @@
             appId: "1:744052473577:web:ee5b767dfde9438af67a78",
             measurementId: "G-8CF9E1E98E"
         };
-        // v34 穩定化：強化偵錯能力與金鑰獲取路徑
-        const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
-
-        // V31 原有的轉換器，但在 v34 中我們將其與診斷邏輯結合
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
-            return outputArray;
-        }
+        
+        // v35 穩定化方案：回歸字串格式以符合 Compat SDK 要求，並手動對齊 Base64 以繞過 iOS atob 地雷
+        // 原始: BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M
+        const VAPID_STANDARD_BASE64 = "BMWOLWSRgJ/zs+3/ZTFtigDmggvcXa+/QnDaGI3rQqEADBkszd+emdUmkh9iEO7e/8X/jc8pTEolmzkj/72mF9M=";
 
         function robustFCMDecode(base64String = "") {
-            // v34 強制返回 Uint8Array 格式，並確認配置不遺失
-            console.log("[v34 DEBUG] 使用金鑰進行訂閱:", VAPID_KEY);
-            return urlBase64ToUint8Array(VAPID_KEY);
+            console.log("[v35 DEBUG] 使用標準字串進行訂閱:", VAPID_STANDARD_BASE64);
+            return VAPID_STANDARD_BASE64;
         }
 
         // 初始化 Firebase 全域變數
@@ -612,7 +603,7 @@
                     firebase.initializeApp(firebaseConfig);
                     messaging = firebase.messaging();
                 }
-                console.log("[v34 DEBUG] Firebase Config 確認:", messaging.app.options.apiKey ? "✅ 已載入" : "❌ 遺失 API Key");
+                console.log("[v35 DEBUG] Firebase Config 確認:", messaging.app.options.apiKey ? "✅ 已載入" : "❌ 遺失 API Key");
                 
                 const currentToken = await messaging.getToken({ 
                     vapidKey: robustFCMDecode(), 
@@ -646,8 +637,8 @@
                 if (err.code === 'messaging/permission-blocked') {
                     showToast("❌ 通知權限已被瀏覽器封鎖", "error");
                 } else {
-                    showToast("❌ [v34] 憑證錯誤: " + err.message, "error");
-                    console.error("[v34 DEBUG] 完整錯誤對象:", err);
+                    showToast("❌ [v35] 憑證錯誤: " + err.message, "error");
+                    console.error("[v35 DEBUG] 完整錯誤對象:", err);
                 }
             }
         }
