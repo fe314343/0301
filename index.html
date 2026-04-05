@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v23</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v24</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -562,9 +562,10 @@
         };
         const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
 
-        function urlBase64ToUint8Array(base64String) {
+        function robustFCMDecode(base64String) {
             const raw = base64String.replace(/[^A-Za-z0-9\-_]/g, '');
-            const padding = '='.repeat((4 - (raw.length % 4)) % 4);
+            const paddingValue = (4 - (raw.length % 4)) % 4;
+            const padding = '='.repeat(paddingValue);
             const base64 = (raw + padding).replace(/-/g, '+').replace(/_/g, '/');
             
             const lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -616,7 +617,7 @@
                 showToast("⏳ 正在取得裝置憑證...");
                 
                 const currentToken = await messaging.getToken({ 
-                    vapidKey: urlBase64ToUint8Array(VAPID_KEY), 
+                    vapidKey: robustFCMDecode(VAPID_KEY), 
                     serviceWorkerRegistration: registration 
                 });
                 
@@ -647,7 +648,7 @@
                 if (err.code === 'messaging/permission-blocked') {
                     showToast("❌ 通知權限已被瀏覽器封鎖", "error");
                 } else {
-                    showToast("❌ 憑證錯誤: " + err.message, "error");
+                    showToast("❌ [v24] 憑證錯誤: " + err.message, "error");
                 }
             }
         }
