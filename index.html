@@ -172,6 +172,9 @@
             pointer-events: none;
         }
     </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 </head>
 
 <body class="pb-10">
@@ -534,6 +537,79 @@
         let currentBypassCode = ""; // 從後端讀取的演出授權碼
         // 區段導覽狀態
         let surveySections = [], currentSectionIdx = 0, sectionHistory = [], allSurveyResponses = {};
+
+        // --- Firebase 設定 ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjjkrPrHBsoYuazfHlS4DwclksIw5SYYk",
+            authDomain: "baiyang-co.firebaseapp.com",
+            projectId: "baiyang-co",
+            storageBucket: "baiyang-co.firebasestorage.app",
+            messagingSenderId: "744052473577",
+            appId: "1:744052473577:web:ee5b767dfde9438af67a78",
+            measurementId: "G-8CF9E1E98E"
+        };
+        const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
+
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
+
+        // 監聽前台推播訊息
+        messaging.onMessage((payload) => {
+            console.log('Message received. ', payload);
+            if (payload.notification) {
+                showToast(payload.notification.title + ": " + payload.notification.body);
+            }
+        });
+
+        async function getAndRegisterToken() {
+            try {
+                const currentToken = await messaging.getToken({ vapidKey: VAPID_KEY });
+                if (currentToken) {
+                    console.log("Device Token:", currentToken);
+                    if (currentUser && currentUser.Email) {
+                        await callBackend('updateDeviceToken', { 
+                            email: currentUser.Email, 
+                            token: currentToken 
+                        });
+                    }
+                } else {
+                    console.warn('No registration token available. Request permission to generate one.');
+                }
+            } catch (err) {
+                console.error('An error occurred while retrieving token. ', err);
+            }
+        }
+
+        async function requestNotificationPermission(showFeedback = false) {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === 'granted') {
+                if (showFeedback) showToast("通知權限已開啟");
+                getAndRegisterToken();
+                return;
+            }
+
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    showToast("通知功能已成功啟用！");
+                    document.getElementById('notif-permission-banner')?.classList.add('hidden');
+                    getAndRegisterToken();
+                } else {
+                    if (showFeedback) showToast("通知權限被拒絕，請從瀏覽器設定開啟", true);
+                }
+            } catch (e) {
+                console.error("Permission error", e);
+            }
+        }
+
+        function setupUserPWA() {
+            if (Notification.permission !== 'granted') {
+                document.getElementById('notif-permission-banner')?.classList.remove('hidden');
+            } else {
+                getAndRegisterToken();
+            }
+        }
 
         // --- 新增：從本地存儲恢復登入狀態 ---
         const storedUser = localStorage.getItem('user');

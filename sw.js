@@ -1,3 +1,19 @@
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAjjkrPrHBsoYuazfHlS4DwclksIw5SYYk",
+  authDomain: "baiyang-co.firebaseapp.com",
+  projectId: "baiyang-co",
+  storageBucket: "baiyang-co.firebasestorage.app",
+  messagingSenderId: "744052473577",
+  appId: "1:744052473577:web:ee5b767dfde9438af67a78",
+  measurementId: "G-8CF9E1E98E"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
 const CACHE_NAME = 'cz-smart-v21';
 const ASSETS = [
   './',

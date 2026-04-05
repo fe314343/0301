@@ -31,6 +31,7 @@ function doPost(e) {
             case 'getSurveyResults': result = getSurveyResults(data); break;
             case 'saveSystemSetting': result = saveSystemSetting(data); break;
             case 'deactivateEvent': result = deactivateEvent(); break;
+            case 'updateDeviceToken': result = updateDeviceToken(data); break;
             default: result = { success: false, message: "未知指令" };
         }
     } catch (err) {
@@ -495,35 +496,115 @@ function getAttendanceHistory(data) {
             if (rowEmail === email) {
                 const eventName = String(attData[i][4] || "一般團練"); // 抓取真正的活動名
                 const dateRaw = attData[i][5];
-                const dateStr = dateRaw instanceof Date ? Utilities.formatDate(dateRaw, "GMT+8", "yyyy-MM-dd") : String(dateRaw || "");
+                c// ==========================================
+// E. FCM 推播核心 (FCM Messaging)
+// ==========================================
 
-                let duration = String(attData[i][8] || "");
-                if (!duration) duration = "2時30分";
-                list.push({
-                    status: eventName,
-                    date: dateStr,
-                    duration: duration
-                });
-            }
-        }
-        return { success: true, list: list };
-    } catch (e) { return { success: false, message: e.toString() }; }
+// 改從「指令碼屬性」讀取金鑰，不把秘密寫在程式碼裡
+const SCRIPT_PROP = PropertiesService.getScriptProperties();
+
+const SERVICE_ACCOUNT = {
+  "project_id": SCRIPT_PROP.getProperty("FIREBASE_PROJECT_ID") || "baiyang-co",
+  "client_email": SCRIPT_PROP.getProperty("FIREBASE_CLIENT_EMAIL"),
+  "private_key": SCRIPT_PROP.getProperty("FIREBASE_PRIVATE_KEY")
+};
+
+/**
+ * 第一次使用前，請手動在 GAS 編輯器執行此函數來設定金鑰
+ * 或直接在 GAS 設定介面的「指定碼屬性」手動貼上對應的值
+ */
+function setupFirebaseSecrets() {
+  const props = PropertiesService.getScriptProperties();
+  // 請確認以下內容與你下載的 JSON 檔案一致 (只需跑一次)
+  // 此函數內容不應長時間留在程式碼中，設定完後可以刪除此函數或清空
+  props.setProperties({
+    "FIREBASE_PROJECT_ID": "baiyang-co",
+    "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-fbsvc@baiyang-co.iam.gserviceaccount.com",
+    "FIREBASE_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDZIlDAGvGmlRGA\nHro0K7ag1g0UHZMCGaoBU1sZg6TirzGc3q40xE38i+XT4YOElpLa/C9V9fjYL2d8\nXMhS8MRlXBmtt5uPwRoG83qVEka3f+eRI12WPzGwWN1U6+u9CfPrhbmQJINnNJwA\nQfflV/6i3DA4JJyr5R+Irz10sjrZQw6w84tQ92ae+47wTY7ZGovC53f+16RiBVlK\nnklq/WDBZUQeF7iRrg+JSLQLydMWf3w/KNj4gHcaeo/KrJmLqf0IupyJYS8W8fqH\nSUSQmuEDBfXSXxCLp4XQVi3WFRh6yutXy2gyXRsk4c/QgpDKySWm+WMk/MHYwwuC\nupFXtoa1AgMBAAECggEAEdb0bHwqO4YG3JBpuwyWYiuEApGVePgz1A0NsJB01R0Q\nxfMzu+kfAS9bUCe4nwWiBjTvDLB7ZAOtDHYxDUNz12IUSAYMVWjHoyeQ/Dt2rO/o\nzi9qKoSBqBv8/1Os2Ci/riub/eBKHYoggRLqc6Dhrm7J1WsIpkTabOf89CAKnrvx\naJdLyWXH63G1MF6e8UJtoi7fKh8FONqGZRZbeAk681XOkUDd6A8FfIehpAPaPPPs\nChjhKfA77J28DtvxAU9+nV9mox/zHLoIXWBjjiuwFZldYp30vakwvrMMXQniopC2\nmhxWS9yfJI6rMb3U5iQS2OidjCupDMPp9FCC9/JYpwKBgQD3sY9hITTIl6iNRf2h\n6rQ8VKtPu5fIEZ1rxEYxaGW0aQlzpJ6M/I7+WkZbFBSeC/bZTRb6BROkuYGrCP9I\nXSL71ED598ESSW3YxDTvvJw+VUOOGzhf55NIMwO4EZ8ZuSoVVygjwPrjLitPewcc\nMAjXDNrc5AmglcIIlgg3gTFpVwKBgQDgamceSph0XpXAdIZ9tUIQKw4kXUtx6ri9\nmGAB1gK4Ca9gmdR+kun7dCHigUzWGvPZKyBV6hBU6unKRSjdx+FRXsnXUUtgyDtc\nk/+5bZjtTxoZvo0/t/q85Q1H3BQR/X5DewrYmpus14Jhmd91FMwxjbZJXDTNIune\n8mE6RVRs0wKBgQCqTj68VP2a8pPk1vvmSZ81YC4N+3kICfyILYLp09MiMZpbFhQh\n8kFLZ7y6QNtQM/+9N4EV1UnFV/ttIxmLouY76pvmg1AQB8bsZTPUpoVzYmK5ocOo\ RWyCFvl2pT8Ui7kAxVWHB9g5PfRviLLB0dEyM9eES5LHBFFOYAI0T7MurwKBgQCe\nWDV+WCAOLBb5/r5OwLBmfBq0aeer73R+wp8rbHfqp1rJjIE09jCGrkCic51ljQr1\n9soQFOGFKWPgxr+5DSncokdE2CWZmm7YOc08Zyp6d0/xTlSX2xbeZbfjNlQrBXQr\n5QuYHi8t27oxZ8MV96DEbjtqs9bFz5a5KsiTtwuE5QKBgAHhvvSdGHbqM39cWAWZ\nqdK3QzpF3U0C35RE0bwGwkpUX2/GlxGuVLJ+pK402E32iVw3NSsITZnx9K+5gBvb\nJxObZVZve5hIfMrxEvAwlenewuHpqsn6YmcdYoP1OQiw5jaAnJw14c0thxkj2ro7\nIFGNmM1vtN0M1vnscmaJBith\n-----END PRIVATE KEY-----\n"
+  });
+}FXtoa1AgMBAAECggEAEdb0bHwqO4YG3JBpuwyWYiuEApGVePgz1A0NsJB01R0Q\nxfMzu+kfAS9bUCe4nwWiBjTvDLB7ZAOtDHYxDUNz12IUSAYMVWjHoyeQ/Dt2rO/o\nzi9qKoSBqBv8/1Os2Ci/riub/eBKHYoggRLqc6Dhrm7J1WsIpkTabOf89CAKnrvx\naJdLyWXH63G1MF6e8UJtoi7fKh8FONqGZRZbeAk681XOkUDd6A8FfIehpAPaPPPs\nChjhKfA77J28DtvxAU9+nV9mox/zHLoIXWBjjiuwFZldYp30vakwvrMMXQniopC2\nmhxWS9yfJI6rMb3U5iQS2OidjCupDMPp9FCC9/JYpwKBgQD3sY9hITTIl6iNRf2h\n6rQ8VKtPu5fIEZ1rxEYxaGW0aQlzpJ6M/I7+WkZbFBSeC/bZTRb6BROkuYGrCP9I\nXSL71ED598ESSW3YxDTvvJw+VUOOGzhf55NIMwO4EZ8ZuSoVVygjwPrjLitPewcc\nMAjXDNrc5AmglcIIlgg3gTFpVwKBgQDgamceSph0XpXAdIZ9tUIQKw4kXUtx6ri9\nmGAB1gK4Ca9gmdR+kun7dCHigUzWGvPZKyBV6hBU6unKRSjdx+FRXsnXUUtgyDtc\nk/+5bZjtTxoZvo0/t/q85Q1H3BQR/X5DewrYmpus14Jhmd91FMwxjbZJXDTNIune\n8mE6RVRs0wKBgQCqTj68VP2a8pPk1vvmSZ81YC4N+3kICfyILYLp09MiMZpbFhQh\n8kFLZ7y6QNtQM/+9N4EV1UnFV/ttIxmLouY76pvmg1AQB8bsZTPUpoVzYmK5ocOo\nRWyCFvl2pT8Ui7kAxVWHB9g5PfRviLLB0dEyM9eES5LHBFFOYAI0T7MurwKBgQCe\nWDV+WCAOLBb5/r5OwLBmfBq0aeer73R+wp8rbHfqp1rJjIE09jCGrkCic51ljQr1\n9soQFOGFKWPgxr+5DSncokdE2CWZmm7YOc08Zyp6d0/xTlSX2xbeZbfjNlQrBXQr\n5QuYHi8t27oxZ8MV96DEbjtqs9bFz5a5KsiTtwuE5QKBgAHhvvSdGHbqM39cWAWZ\nqdK3QzpF3U0C35RE0bwGwkpUX2/GlxGuVLJ+pK402E32iVw3NSsITZnx9K+5gBvb\nJxObZVZve5hIfMrxEvAwlenewuHpqsn6YmcdYoP1OQiw5jaAnJw14c0thxkj2ro7\nIFGNmM1vtN0M1vnscmaJBith\n-----END PRIVATE KEY-----\n"
+};
+
+function updateDeviceToken(data) {
+  try {
+    const sheet = SS.getSheetByName("Members");
+    const emails = sheet.getRange(1, 4, sheet.getLastRow(), 1).getValues().flat();
+    const email = String(data.email).toLowerCase().trim();
+    const rowIndex = emails.indexOf(email);
+    if (rowIndex === -1) return { success: false, message: "帳號未找到" };
+    
+    // 確保存儲 Token 的欄位存在 (假設存在第 14 欄，N 欄)
+    ensureSheetWidth(sheet, 14);
+    sheet.getRange(rowIndex + 1, 14).setValue(data.token);
+    return { success: true };
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
-
-function getAnnouncement() {
-    try {
-        const data = SS.getSheetByName("Announcements").getRange(2, 1, 1, 2).getValues()[0];
-        const time = data[1] instanceof Date ? Utilities.formatDate(data[1], "GMT+8", "yyyy-MM-dd HH:mm") : "";
-        return { success: true, content: data[0] || "目前暫無公告。", updateTime: time };
-    } catch (e) { return { success: false }; }
+function sendBroadcastNotification(title, body) {
+  try {
+    const sheet = SS.getSheetByName("Members");
+    const data = sheet.getDataRange().getValues();
+    const tokens = [];
+    // 收集所有有 Token 的團員 (第 14 欄)
+    for (let i = 1; i < data.length; i++) {
+        const token = data[i][13]; // 索引 13 是第 14 欄 (N 欄)
+        if (token && token.length > 10) tokens.push(token);
+    }
+    
+    if (tokens.length === 0) return;
+    
+    tokens.forEach(tk => {
+      sendFCM(tk, title, body);
+    });
+  } catch (e) { console.error("Broadcast failed: " + e.toString()); }
 }
 
-function saveAnnouncement(data) {
-    try {
-        SS.getSheetByName("Announcements").getRange(2, 1, 1, 2).setValues([[data.content, new Date()]]);
-        return { success: true };
-    } catch (e) { return { success: false }; }
+function sendFCM(targetToken, title, body) {
+  const url = `https://fcm.googleapis.com/v1/projects/${SERVICE_ACCOUNT.project_id}/messages:send`;
+  const jwtToken = getFCMAuthToken();
+  const payload = {
+    message: {
+      token: targetToken,
+      notification: { title: title, body: body }
+    }
+  };
+  
+  const options = {
+    method: "POST",
+    contentType: "application/json",
+    headers: { Authorization: "Bearer " + jwtToken },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+  
+  const res = UrlFetchApp.fetch(url, options);
+  return res.getContentText();
+}
+
+function getFCMAuthToken() {
+  const header = JSON.stringify({ alg: "RS256", typ: "JWT" });
+  const now = Math.floor(Date.now() / 1000);
+  const claimSet = JSON.stringify({
+    iss: SERVICE_ACCOUNT.client_email,
+    scope: "https://www.googleapis.com/auth/cloud-platform",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now
+  });
+  
+  const toSign = Utilities.base64EncodeWebSafe(header) + "." + Utilities.base64EncodeWebSafe(claimSet);
+  const signature = Utilities.computeRsaSha256Signature(toSign, SERVICE_ACCOUNT.private_key);
+  const jwt = toSign + "." + Utilities.base64EncodeWebSafe(signature);
+  
+  const res = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    payload: {
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt
+    }
+  });
+  
+  return JSON.parse(res.getContentText()).access_token;
 }
 
 // 2. 儲存：修正為分段儲存，更安全
