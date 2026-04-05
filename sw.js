@@ -14,50 +14,74 @@ const firebaseConfig = {
 try {
     firebase.initializeApp(firebaseConfig);
     const messaging = firebase.messaging();
+
+    // v38: 整合 Firebase 背景訊息處理器
+    messaging.onBackgroundMessage((payload) => {
+        console.log('[SW] 背景訊息收到: ', payload);
+        const title = payload.notification?.title || payload.data?.title || '新公告';
+        const options = {
+            body: payload.notification?.body || payload.data?.body || '崇正國樂團有新內容！',
+            icon: 'icon-192.png',
+            badge: 'icon-192.png',
+            data: { url: './index.html' }
+        };
+        return self.registration.showNotification(title, options);
+    });
 } catch (e) {
     console.error("Firebase init failed in SW", e);
 }
 
-const CACHE_NAME = 'cz-smart-v37';
+const CACHE_NAME = 'cz-smart-v38';
 
-// 安裝時 (移除強制快取，避免跨域資源阻擋整個 PWA 啟動)
+// 安裝與啟用邏輯保持不變
 self.addEventListener('install', event => {
-  console.log('[SW] Installing...');
   self.skipWaiting();
 });
 
-// 啟動時清理舊快取
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating...');
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
-      keys.map(key => {
-        if (key !== CACHE_NAME) return caches.delete(key);
-      })
+      keys.map(key => { if (key !== CACHE_NAME) return caches.delete(key); })
     )).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', event => {
-  // 簡化版的網路連線優先，避免阻擋 API 或 Firebase
   event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
 
-// 監聽推播訊息
+// v38: 強化後的原始推播監聽器 (雙重保險)
 self.addEventListener('push', event => {
-  const data = event.data ? event.data.json() : { title: '新公告', body: '崇正國樂團有新的內容！' };
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: 'icon-192.png',
-      badge: 'icon-192.png',
-      data: { url: './index.html' }
-    })
-  );
+  try {
+      if (event.data) {
+          const data = event.data.json();
+          // 如果 FCM 自動處理了通知，這裡可以選擇不做事，但為了保險起見我們手動觸發一次
+          const title = data.notification?.title || data.title || '新公告';
+          const options = {
+              body: data.notification?.body || data.body || '崇正國樂團有新內容！',
+              icon: 'icon-192.png',
+              badge: 'icon-192.png',
+              data: { url: './index.html' }
+          };
+          event.waitUntil(self.registration.showNotification(title, options));
+      }
+  } catch (err) {
+      console.warn('[SW] Push parsing failed, using default info.');
+      event.waitUntil(self.registration.showNotification('新公告', {
+          body: '崇正國樂團有新動態！',
+          icon: 'icon-192.png'
+      }));
+  }
 });
 
-// 點擊通知開合 App
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  event.waitUntil(clients.openWindow(event.notification.data.url || '/'));
+  event.waitUntil(clients.matchAll({ type: 'window' }).then(clientsArr => {
+    if (clientsArr.length > 0) {
+      clientsArr[0].focus();
+      return clientsArr[0].navigate('./index.html');
+    }
+    return clients.openWindow('./index.html');
+  }));
 });
+
