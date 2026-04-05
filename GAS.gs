@@ -583,7 +583,28 @@ function sendFCM(targetToken, title, body) {
   const payload = {
     message: {
       token: targetToken,
-      notification: { title: title, body: body }
+      notification: { title: title, body: body },
+      data: {
+        title: title,
+        body: body,
+        click_action: "./index.html",
+        version: "v41"
+      },
+      webpush: {
+        headers: {
+          Urgency: "high"
+        },
+        notification: {
+          title: title,
+          body: body,
+          icon: "https://fe314343.github.io/0301/icon-192.png",
+          badge: "https://fe314343.github.io/0301/icon-192.png",
+          requireInteraction: true
+        },
+        fcm_options: {
+          link: "https://fe314343.github.io/0301/index.html"
+        }
+      }
     }
   };
   

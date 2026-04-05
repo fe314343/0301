@@ -31,7 +31,7 @@ try {
     console.error("Firebase init failed in SW", e);
 }
 
-const CACHE_NAME = 'cz-smart-v39';
+const CACHE_NAME = 'cz-smart-v41';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
