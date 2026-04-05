@@ -563,7 +563,8 @@
         const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
 
         function urlBase64ToUint8Array(base64String) {
-            const raw = base64String.trim();
+            // 只保留字母、數字、和特定的連字號、底線，徹底過濾可能的隱形字元
+            const raw = base64String.replace(/[^A-Za-z0-9\-_]/g, '');
             const padding = '='.repeat((4 - (raw.length % 4)) % 4);
             const base64 = (raw + padding)
                 .replace(/-/g, '+')
