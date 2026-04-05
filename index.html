@@ -196,10 +196,16 @@
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
             </div>
-            <button onclick="handleLogout()"
-                class="bg-slate-50 text-slate-500 px-4 py-2 rounded-xl text-[11px] font-black hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center gap-2 border border-slate-100 hover:border-rose-100 shadow-sm">
-                <i data-lucide="power" class="w-3.5 h-3.5"></i>登出
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="getAndRegisterToken()" title="同步推播設定"
+                    class="bg-indigo-50 text-indigo-500 p-2 rounded-xl hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+                <button onclick="handleLogout()"
+                    class="bg-slate-50 text-slate-500 px-4 py-2 rounded-xl text-[11px] font-black hover:bg-rose-50 hover:text-rose-500 transition-all flex items-center gap-2 border border-slate-100 hover:border-rose-100 shadow-sm">
+                    <i data-lucide="power" class="w-3.5 h-3.5"></i>登出
+                </button>
+            </div>
         </div>
     </nav>
 
@@ -555,6 +561,17 @@
         };
         const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
 
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
         // 初始化 Firebase
         firebase.initializeApp(firebaseConfig);
         const messaging = firebase.messaging();
@@ -569,37 +586,49 @@
 
         async function getAndRegisterToken() {
             try {
-                // 等待且強制取得最新的 Service Worker 註冊對象
+                console.log("👉 正在取得 Service Worker 註冊對象...");
                 const registration = await navigator.serviceWorker.ready;
                 
-                // 必須傳入 serviceWorkerRegistration，防止在 GitHub Pages 子目錄發生 404
+                // 強制檢查當前是否為 PWA 獨立模式 (iOS 推播必備)
+                const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+                console.log("📱 是否為 PWA 模式:", isPWA);
+
+                showToast("⏳ 正在取得裝置憑證...");
+                
                 const currentToken = await messaging.getToken({ 
-                    vapidKey: VAPID_KEY, 
+                    vapidKey: urlBase64ToUint8Array(VAPID_KEY), 
                     serviceWorkerRegistration: registration 
                 });
                 
                 if (currentToken) {
-                    console.log("✅ Device Token:", currentToken);
+                    console.log("✅ Device Token 取得完畢");
                     const stored = JSON.parse(localStorage.getItem('user') || '{}');
                     const email = currentUser?.Email || currentUser?.email || stored.Email || stored.email;
                     
                     if (email) {
-                        showToast("⏳ 正在同步推播設定...");
-                        await callBackend('updateDeviceToken', { 
+                        showToast("⏳ 正在同步至伺服器...");
+                        const res = await callBackend('updateDeviceToken', { 
                             email: email, 
                             token: currentToken 
                         });
-                        showToast("🎉 推播設定成功！您的裝置已可接收通知");
-                        console.log("🎉 Token Successfully synced to Backend.");
+                        if (res.success) {
+                            showToast("🎉 推播裝置同步成功！");
+                        } else {
+                            showToast("❌ 同步失敗: " + (res.message || "未知伺服器錯誤"), "error");
+                        }
                     } else {
-                        showToast("⚠️ 找不到登入信箱，請重新整理頁面", "warning");
+                        showToast("⚠️ 偵測不到登入者，請嘗試重新登入", "warning");
                     }
                 } else {
-                    showToast("⚠️ 無法取得推播憑證，請再試一次", "warning");
+                    showToast("⚠️ 無法連線至 Firebase (Token 為空)", "warning");
                 }
             } catch (err) {
-                console.error('❌ An error occurred while retrieving token: ', err);
-                showToast("❌ 錯誤: " + err.message, "error");
+                console.error('❌ FCM Error:', err);
+                if (err.code === 'messaging/permission-blocked') {
+                    showToast("❌ 通知權限已被瀏覽器封鎖", "error");
+                } else {
+                    showToast("❌ 憑證錯誤: " + err.message, "error");
+                }
             }
         }
 
