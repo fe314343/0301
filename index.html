@@ -724,8 +724,16 @@
             if (phoneInput) phoneInput.value = currentUser.Phone || "";
             if (bdayInput) {
                 let d = currentUser.Birthday;
-                // 若為 ISO 格式 (Google Sheets 日期格式)，截取 YYYY-MM-DD 部分
-                if (d && typeof d === 'string' && d.includes('T')) d = d.split('T')[0];
+                if (d) {
+                    // 用本地時區解析，避免 UTC vs UTC+8 造成日期少一天
+                    const dt = new Date(d);
+                    if (!isNaN(dt.getTime())) {
+                        const y = dt.getFullYear();
+                        const mo = String(dt.getMonth() + 1).padStart(2, '0');
+                        const da = String(dt.getDate()).padStart(2, '0');
+                        d = `${y}-${mo}-${da}`;
+                    }
+                }
                 bdayInput.value = d || "";
             }
             if (idInput) idInput.value = currentUser.ID_Number || "";
@@ -1466,7 +1474,16 @@
                     prevVal = currentUser.ID_Number || "";
                 } else if (labelStr.includes("生日") || labelStr.includes("出生") || labelStr.includes("birthday")) {
                     let d = currentUser.Birthday;
-                    if (d && typeof d === 'string' && d.includes('T')) d = d.split('T')[0];
+                    if (d) {
+                        // 用本地時區解析，避免 UTC vs UTC+8 造成日期少一天
+                        const dt = new Date(d);
+                        if (!isNaN(dt.getTime())) {
+                            const y = dt.getFullYear();
+                            const mo = String(dt.getMonth() + 1).padStart(2, '0');
+                            const da = String(dt.getDate()).padStart(2, '0');
+                            d = `${y}-${mo}-${da}`;
+                        }
+                    }
                     prevVal = d || "";
                 }
             }
