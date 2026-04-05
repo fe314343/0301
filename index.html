@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v30</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v31</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -561,14 +561,26 @@
             appId: "1:744052473577:web:ee5b767dfde9438af67a78",
             measurementId: "G-8CF9E1E98E"
         };
-        // 終極修復方案：手動將 Base64-URL 轉換為「標準 Base64」
-        // Firebase Compat SDK 在內部會呼叫 atob()，若字串包含 "-" 或 "_" 則會報 Invalid characters (iOS 報錯)
-        // 原始: BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M
-        const VAPID_STANDARD_BASE64 = "BMWOLWSRgJ/zs+3/ZTFtigDmggvcXa+/QnDaGI3rQqEADBkszd+emdUmkh9iEO7e/8X/jc8pTEolmzkj/72mF9M=";
-        
+        // v31 穩定化：使用官方推薦的 urlBase64ToUint8Array 轉換方式
+        // 這能確保傳入 getToken 的是精確的二進位資料，且避開 SDK 內部的 atob() 衝突
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
+
         function robustFCMDecode(base64String = "") {
-            // 直接回傳修正後的標準 Base64 字串，避開任何程式碼內部的 atob() 呼叫
-            return VAPID_STANDARD_BASE64;
+            // 直接使用官方邏輯處理
+            return urlBase64ToUint8Array(VAPID_KEY);
         }
 
         // 初始化 Firebase 全域變數
@@ -636,7 +648,7 @@
                 if (err.code === 'messaging/permission-blocked') {
                     showToast("❌ 通知權限已被瀏覽器封鎖", "error");
                 } else {
-                    showToast("❌ [v30] 憑證錯誤: " + err.message, "error");
+                    showToast("❌ [v31] 憑證錯誤: " + err.message, "error");
                 }
             }
         }

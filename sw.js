@@ -18,7 +18,7 @@ try {
     console.error("Firebase init failed in SW", e);
 }
 
-const CACHE_NAME = 'cz-smart-v30';
+const CACHE_NAME = 'cz-smart-v31';
 
 // 安裝時 (移除強制快取，避免跨域資源阻擋整個 PWA 啟動)
 self.addEventListener('install', event => {
