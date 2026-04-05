@@ -15,8 +15,8 @@ try {
     firebase.initializeApp(firebaseConfig);
     const messaging = firebase.messaging();
 
-    // v38: 整合 Firebase 背景訊息處理器
-    messaging.onBackgroundMessage((payload) => {
+    // v39: 使用確後的相容版背景訊息處理器
+    messaging.setBackgroundMessageHandler(function(payload) {
         console.log('[SW] 背景訊息收到: ', payload);
         const title = payload.notification?.title || payload.data?.title || '新公告';
         const options = {
@@ -31,9 +31,8 @@ try {
     console.error("Firebase init failed in SW", e);
 }
 
-const CACHE_NAME = 'cz-smart-v38';
+const CACHE_NAME = 'cz-smart-v39';
 
-// 安裝與啟用邏輯保持不變
 self.addEventListener('install', event => {
   self.skipWaiting();
 });
@@ -50,12 +49,10 @@ self.addEventListener('fetch', event => {
   event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
 
-// v38: 強化後的原始推播監聽器 (雙重保險)
 self.addEventListener('push', event => {
   try {
       if (event.data) {
           const data = event.data.json();
-          // 如果 FCM 自動處理了通知，這裡可以選擇不做事，但為了保險起見我們手動觸發一次
           const title = data.notification?.title || data.title || '新公告';
           const options = {
               body: data.notification?.body || data.body || '崇正國樂團有新內容！',
@@ -66,13 +63,10 @@ self.addEventListener('push', event => {
           event.waitUntil(self.registration.showNotification(title, options));
       }
   } catch (err) {
-      console.warn('[SW] Push parsing failed, using default info.');
-      event.waitUntil(self.registration.showNotification('新公告', {
-          body: '崇正國樂團有新動態！',
-          icon: 'icon-192.png'
-      }));
+      console.warn('[SW] Push parsing failed.');
   }
 });
+
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
