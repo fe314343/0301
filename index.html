@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v29</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v30</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -561,12 +561,14 @@
             appId: "1:744052473577:web:ee5b767dfde9438af67a78",
             measurementId: "G-8CF9E1E98E"
         };
-        // 直接使用二進制字節陣列，徹底繞過所有 Base64 解碼報錯
-        const VAPID_UINT8 = new Uint8Array([4,197,142,45,100,145,128,159,243,179,237,255,101,49,109,138,0,230,130,11,220,93,175,254,66,112,218,24,141,235,66,161,0,12,25,44,205,223,158,153,213,38,146,31,98,16,238,222,255,197,255,141,207,41,76,74,37,155,57,35,255,189,166,23,211]);
-
-        function robustFCMDecode(base64String) {
-            // 此函式現在僅具備相容性，直接回傳預設好的二進位金鑰
-            return VAPID_UINT8;
+        // 終極修復方案：手動將 Base64-URL 轉換為「標準 Base64」
+        // Firebase Compat SDK 在內部會呼叫 atob()，若字串包含 "-" 或 "_" 則會報 Invalid characters (iOS 報錯)
+        // 原始: BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M
+        const VAPID_STANDARD_BASE64 = "BMWOLWSRgJ/zs+3/ZTFtigDmggvcXa+/QnDaGI3rQqEADBkszd+emdUmkh9iEO7e/8X/jc8pTEolmzkj/72mF9M=";
+        
+        function robustFCMDecode(base64String = "") {
+            // 直接回傳修正後的標準 Base64 字串，避開任何程式碼內部的 atob() 呼叫
+            return VAPID_STANDARD_BASE64;
         }
 
         // 初始化 Firebase 全域變數
@@ -634,7 +636,7 @@
                 if (err.code === 'messaging/permission-blocked') {
                     showToast("❌ 通知權限已被瀏覽器封鎖", "error");
                 } else {
-                    showToast("❌ [v29] 憑證錯誤: " + err.message, "error");
+                    showToast("❌ [v30] 憑證錯誤: " + err.message, "error");
                 }
             }
         }
