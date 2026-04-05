@@ -496,7 +496,39 @@ function getAttendanceHistory(data) {
             if (rowEmail === email) {
                 const eventName = String(attData[i][4] || "一般團練"); // 抓取真正的活動名
                 const dateRaw = attData[i][5];
-                c// ==========================================
+                const dateStr = dateRaw instanceof Date ? Utilities.formatDate(dateRaw, "GMT+8", "yyyy-MM-dd") : String(dateRaw || "");
+
+                let duration = String(attData[i][8] || "");
+                if (!duration) duration = "2時30分";
+                list.push({
+                    status: eventName,
+                    date: dateStr,
+                    duration: duration
+                });
+            }
+        }
+        return { success: true, list: list };
+    } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function getAnnouncement() {
+    try {
+        const data = SS.getSheetByName("Announcements").getRange(2, 1, 1, 2).getValues()[0];
+        const time = data[1] instanceof Date ? Utilities.formatDate(data[1], "GMT+8", "yyyy-MM-dd HH:mm") : "";
+        return { success: true, content: data[0] || "目前暫無公告。", updateTime: time };
+    } catch (e) { return { success: false }; }
+}
+
+function saveAnnouncement(data) {
+    try {
+        SS.getSheetByName("Announcements").getRange(2, 1, 1, 2).setValues([[data.content, new Date()]]);
+        // 自動發送推播通知
+        sendBroadcastNotification("國樂團公告", data.content);
+        return { success: true };
+    } catch (e) { return { success: false }; }
+}
+
+// ==========================================
 // E. FCM 推播核心 (FCM Messaging)
 // ==========================================
 
