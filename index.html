@@ -563,24 +563,33 @@
         const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
 
         function urlBase64ToUint8Array(base64String) {
-            // 只保留字母、數字、和特定的連字號、底線，徹底過濾可能的隱形字元
             const raw = base64String.replace(/[^A-Za-z0-9\-_]/g, '');
             const padding = '='.repeat((4 - (raw.length % 4)) % 4);
-            const base64 = (raw + padding)
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-
-            try {
-                const rawData = window.atob(base64);
-                const outputArray = new Uint8Array(rawData.length);
-                for (let i = 0; i < rawData.length; ++i) {
-                    outputArray[i] = rawData.charCodeAt(i);
+            const base64 = (raw + padding).replace(/-/g, '+').replace(/_/g, '/');
+            
+            const lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+            const len = base64.length;
+            let bufferLength = len * 0.75;
+            if (base64.endsWith('==')) bufferLength -= 2;
+            else if (base64.endsWith('=')) bufferLength -= 1;
+            
+            const bytes = new Uint8Array(bufferLength);
+            let p = 0;
+            for (let i = 0; i < len; i += 4) {
+                const encoded1 = lookup.indexOf(base64[i]);
+                const encoded2 = lookup.indexOf(base64[i + 1]);
+                const encoded3 = lookup.indexOf(base64[i + 2]);
+                const encoded4 = lookup.indexOf(base64[i + 3]);
+                
+                bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
+                if (encoded3 !== -1 && p < bufferLength) {
+                    bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
+                    if (encoded4 !== -1 && p < bufferLength) {
+                        bytes[p++] = ((encoded3 & 3) << 6) | encoded4;
+                    }
                 }
-                return outputArray;
-            } catch (e) {
-                console.error("atob error details:", e, "Input:", base64);
-                throw e;
             }
+            return bytes;
         }
 
         // 初始化 Firebase
