@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/10.14.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.14.2/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjjkrPrHBsoYuazfHlS4DwclksIw5SYYk",
@@ -18,7 +18,7 @@ try {
     console.error("Firebase init failed in SW", e);
 }
 
-const CACHE_NAME = 'cz-smart-v26';
+const CACHE_NAME = 'cz-smart-v29';
 
 // 安裝時 (移除強制快取，避免跨域資源阻擋整個 PWA 啟動)
 self.addEventListener('install', event => {
