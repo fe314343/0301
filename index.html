@@ -195,6 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v23</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -562,14 +563,23 @@
         const VAPID_KEY = "BMWOLWSRgJ_zs-3_ZTFtigDmggvcXa_-QnDaGI3rQqEADBkszd-emdUmkh9iEO7e_8X_jc8pTEolmzkj_72mF9M";
 
         function urlBase64ToUint8Array(base64String) {
-            const base64 = base64String.replace(/-/g, '+').replace(/_/g, '/');
-            const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-            const rawData = window.atob(base64 + padding);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
+            const raw = base64String.trim();
+            const padding = '='.repeat((4 - (raw.length % 4)) % 4);
+            const base64 = (raw + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+
+            try {
+                const rawData = window.atob(base64);
+                const outputArray = new Uint8Array(rawData.length);
+                for (let i = 0; i < rawData.length; ++i) {
+                    outputArray[i] = rawData.charCodeAt(i);
+                }
+                return outputArray;
+            } catch (e) {
+                console.error("atob error details:", e, "Input:", base64);
+                throw e;
             }
-            return outputArray;
         }
 
         // 初始化 Firebase
