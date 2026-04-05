@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v39</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v40</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -645,8 +645,8 @@
                 if (err.code === 'messaging/permission-blocked') {
                     showToast("❌ 通知權限已被瀏覽器封鎖", "error");
                 } else {
-                    showToast("❌ [v39] 憑證錯誤: " + err.message, "error");
-                    console.error("[v39 DEBUG] 完整報課對象:", err);
+                    showToast("❌ [v40] 憑證錯誤: " + err.message, "error");
+                    console.error("[v40 DEBUG] 完整報課對象:", err);
                 }
             }
         }
@@ -688,7 +688,7 @@
                 window.atob = originalAtob; // 務必還原環境變數
             }
         };
-        console.log("[v39 DEBUG] Modular SDK 已準備就緒 (v39)");
+        console.log("[v40 DEBUG] Modular SDK 已準備就緒 (v40)");
     </script>
     <script>
         async function requestNotificationPermission(showFeedback = false) {
@@ -2482,11 +2482,22 @@
         </div>
     </div>
 
-    <!-- Toast 通知 (最上層) -->
-    <div id="toast"
-        class="fixed top-12 left-1/2 -translate-x-1/2 hidden flex items-center justify-center gap-3 px-6 py-4 rounded-[22px] glass-panel shadow-2xl z-[20000] border-white transition-all transform duration-500">
-        <i id="toast-icon" data-lucide="info"></i><span id="toast-msg" class="font-black text-sm"></span>
     </div>
+
+    <script>
+        // v40: 確保 Service Worker 獲正確註冊
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // v40: 註冊 Firebase 標準命名的 SW 檔案
+                navigator.serviceWorker.register('firebase-messaging-sw.js')
+                .then(function(registration) {
+                    console.log('✅ firebase-messaging-sw.js 註冊成功 (v40)', registration.scope);
+                }).catch(function(err) {
+                    console.error('❌ Service Worker 註冊失敗:', err);
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>
