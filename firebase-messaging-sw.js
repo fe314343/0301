@@ -15,15 +15,17 @@ try {
     firebase.initializeApp(firebaseConfig);
     const messaging = firebase.messaging();
 
-    // v39: 使用確後的相容版背景訊息處理器
+    // v42: 使用相容版背景處理器 (排除 manual push 衝突)
     messaging.setBackgroundMessageHandler(function(payload) {
-        console.log('[SW] 背景訊息收到: ', payload);
-        const title = payload.notification?.title || payload.data?.title || '新公告';
+        console.log('[SW] Firebase 背景訊息解析: ', payload);
+        const title = payload.notification?.title || payload.data?.title || '國樂團公告';
         const options = {
-            body: payload.notification?.body || payload.data?.body || '崇正國樂團有新內容！',
-            icon: 'icon-192.png',
-            badge: 'icon-192.png',
-            data: { url: './index.html' }
+            body: payload.notification?.body || payload.data?.body || '崇正國樂團有新公告，請進入查看',
+            icon: 'https://fe314343.github.io/0301/icon-192.png',
+            badge: 'https://fe314343.github.io/0301/icon-192.png',
+            data: { url: 'https://fe314343.github.io/0301/index.html' },
+            tag: 'cz-broadcast', // 覆寫舊通知防止洗版
+            renotify: true
         };
         return self.registration.showNotification(title, options);
     });
@@ -31,11 +33,9 @@ try {
     console.error("Firebase init failed in SW", e);
 }
 
-const CACHE_NAME = 'cz-smart-v41';
+const CACHE_NAME = 'cz-smart-v42';
 
-self.addEventListener('install', event => {
-  self.skipWaiting();
-});
+self.addEventListener('install', event => { self.skipWaiting(); });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -49,24 +49,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
 
-self.addEventListener('push', event => {
-  try {
-      if (event.data) {
-          const data = event.data.json();
-          const title = data.notification?.title || data.title || '新公告';
-          const options = {
-              body: data.notification?.body || data.body || '崇正國樂團有新內容！',
-              icon: 'icon-192.png',
-              badge: 'icon-192.png',
-              data: { url: './index.html' }
-          };
-          event.waitUntil(self.registration.showNotification(title, options));
-      }
-  } catch (err) {
-      console.warn('[SW] Push parsing failed.');
-  }
-});
-
+// v42: 我們移除手動 push 監聽器，讓上面的 setBackgroundMessageHandler 獨家處理
+// 這能解決某些系統中「監聽器搶食」導致通知不跳的問題
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();

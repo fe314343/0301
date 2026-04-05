@@ -32,6 +32,7 @@ function doPost(e) {
             case 'saveSystemSetting': result = saveSystemSetting(data); break;
             case 'deactivateEvent': result = deactivateEvent(); break;
             case 'updateDeviceToken': result = updateDeviceToken(data); break;
+            case 'testPush': result = testPush(data); break;
             default: result = { success: false, message: "未知指令" };
         }
     } catch (err) {
@@ -617,7 +618,28 @@ function sendFCM(targetToken, title, body) {
   };
   
   const res = UrlFetchApp.fetch(url, options);
-  return res.getContentText();
+  const responseText = res.getContentText();
+  Logger.log("FCM Response: " + responseText);
+  return responseText;
+}
+
+// v42: 診斷用測試推播
+function testPush(data) {
+  try {
+    const sheet = SS.getSheetByName("Members");
+    const emails = sheet.getRange(1, 4, sheet.getLastRow(), 1).getValues().flat();
+    const email = String(data.email).toLowerCase().trim();
+    const rowIndex = emails.indexOf(email);
+    if (rowIndex === -1) return { success: false, message: "找不到該帳號" };
+    
+    const token = sheet.getRange(rowIndex + 1, 14).getValue();
+    if (!token) return { success: false, message: "該帳號尚未儲存推播凭證(Token)" };
+    
+    const response = sendFCM(token, "🔔 系統診斷測試", "如果您看到這則訊息，代表背景通道連線正常！(v42)");
+    return { success: true, rawResponse: response };
+  } catch (e) {
+    return { success: false, message: "診斷失敗: " + e.toString() };
+  }
 }
 
 function getFCMAuthToken() {
