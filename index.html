@@ -195,7 +195,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v43</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v44</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -946,9 +946,16 @@
                 modal.style.display = 'flex';
                 switchProfileTab('basic'); 
                 
-                // v42: 診斷資資初始化
+                // v42: 診斷內容初始化
                 const diagVal = document.getElementById('diag-push-result');
                 if (diagVal) diagVal.innerText = "尚未發起診斷";
+                
+                // v44: 權限過濾，僅管理員可見診斷面板
+                const pushDiagPanel = document.getElementById('diag-push-panel');
+                if (pushDiagPanel) {
+                    const isAdmin = currentUser && (currentUser.Role === 'Admin' || currentUser.role === 'Admin');
+                    pushDiagPanel.classList.toggle('hidden', !isAdmin);
+                }
             }
             safeCreateIcons();
             requestNotificationPermission();
