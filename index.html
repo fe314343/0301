@@ -124,6 +124,12 @@
             display: none;
         }
 
+        /* 自定義捲軸樣式 - 用於彈窗內部 */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
         .app-icon-card {
             width: 85px;
             height: 85px;
@@ -195,7 +201,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v44</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v48</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -688,7 +694,7 @@
                 window.atob = originalAtob; // 務必還原環境變數
             }
         };
-        console.log("[v42 DEBUG] Modular SDK 已準備就緒 (v42)");
+        console.log("[v48 DEBUG] Modular SDK 已準備就緒 (v48)");
     </script>
     <script>
         async function requestNotificationPermission(showFeedback = false) {
@@ -2213,10 +2219,11 @@
     <!-- 所有 Modal 統一放置於底部確保 z-index 正常 -->
 
     <!-- 個人資料編輯 Modal -->
-    <div id="profile-modal" class="hidden fixed inset-0 z-[10100] flex items-center justify-center p-6 shadow-2xl">
+    <div id="profile-modal" class="hidden fixed inset-0 z-[10100] flex items-center justify-center p-6 shadow-2xl overflow-hidden">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeProfileModal()"></div>
-        <div class="bg-white w-full max-w-sm rounded-[40px] shadow-2xl p-8 relative fade-up flex flex-col items-center"
+        <div class="bg-white w-full max-w-sm rounded-[40px] shadow-2xl p-8 relative fade-up flex flex-col items-center max-h-[90vh]"
             style="z-index: 10106;">
+            <div class="w-full overflow-y-auto pr-2 custom-scrollbar flex flex-col items-center pb-2">
             <div class="w-24 h-24 rounded-[32px] bg-slate-800 text-white flex items-center justify-center font-[900] text-3xl mb-4 shadow-xl border-4 border-white"
                 id="profile-initial">-</div>
             <div class="w-full space-y-2 mb-6 text-center">
@@ -2316,7 +2323,7 @@
                 </div>
             </div>
 
-            <div class="pt-6 w-full flex gap-3">
+            <div class="pt-6 w-full flex gap-3 bg-white mt-auto">
                 <button onclick="location.reload(true)"
                     class="flex-1 py-4 bg-slate-100 text-slate-500 font-black rounded-[22px] text-xs">強制重整</button>
                 <button id="update-password-btn" onclick="handleUpdatePassword()"
@@ -2328,12 +2335,12 @@
     </div>
 
     <!-- 活動編輯 Modal -->
-    <div id="edit-modal" class="hidden fixed inset-0 z-[10101] flex items-center justify-center p-6 shadow-2xl">
+    <div id="edit-modal" class="hidden fixed inset-0 z-[10101] flex items-center justify-center p-6 shadow-2xl overflow-hidden">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md text-center" onclick="closeEditModal()"></div>
-        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up text-center"
+        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up text-center flex flex-col max-h-[90vh]"
             style="z-index: 10106;">
             <h3 id="modal-title" class="text-xl font-[900] text-slate-800 mb-6 tracking-tight">活動詳細設定</h3>
-            <div class="space-y-4">
+            <div class="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 <div class="space-y-1"><label
                         class="text-[10px] font-black text-slate-400 uppercase px-1">活動名稱</label><input type="text"
                         id="edit-name"
@@ -2368,7 +2375,7 @@
                     </div>
                 </div>
             </div>
-            <div class="flex gap-4 mt-8">
+            <div class="flex gap-4 mt-8 bg-white">
                 <button onclick="closeEditModal()"
                     class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">取消</button>
                 <button id="save-event-btn" onclick="saveEvent()"
@@ -2377,10 +2384,9 @@
         </div>
     </div>
 
-    <!-- 公告編輯 Modal -->
-    <div id="announcement-modal" class="hidden fixed inset-0 z-[10102] flex items-center justify-center p-6">
+    <div id="announcement-modal" class="hidden fixed inset-0 z-[10102] flex items-center justify-center p-6 overflow-hidden">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeAnnouncementModal()"></div>
-        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up" style="z-index: 10106;">
+        <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up flex flex-col max-h-[90vh]" style="z-index: 10106;">
             <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i
                     data-lucide="megaphone" class="w-6 h-6 text-amber-500"></i>發布全員公告</h3>
             <textarea id="announcement-edit-input"
@@ -2396,7 +2402,7 @@
     </div>
 
     <!-- 問卷管理 Modal -->
-    <div id="survey-admin-modal" class="hidden fixed inset-0 z-[10103] flex items-center justify-center p-6">
+    <div id="survey-admin-modal" class="hidden fixed inset-0 z-[10103] flex items-center justify-center p-6 overflow-hidden">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeSurveyAdminModal()"></div>
         <div class="bg-white w-full max-w-lg rounded-[36px] shadow-2xl p-8 relative fade-up max-h-[90vh] flex flex-col"
             style="z-index: 10106;">
@@ -2468,7 +2474,7 @@
     </div>
 
     <!-- 問卷填寫 Modal -->
-    <div id="survey-modal" class="hidden fixed inset-0 z-[10104] flex items-center justify-center p-6 shadow-2xl">
+    <div id="survey-modal" class="hidden fixed inset-0 z-[10104] flex items-center justify-center p-6 shadow-2xl overflow-hidden">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeSurveyModal()"></div>
         <div id="survey-modal-content"
             class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-0 relative fade-up flex flex-col transition-all duration-500 overflow-hidden max-h-[90vh]"
