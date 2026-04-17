@@ -1750,12 +1750,23 @@
 
         function evaluateSurveyConditions() {
             const currentAnswers = {};
+            // 1. 從歷史資料與已填寫資料初始化 (用於跨分頁判斷)
+            const idMap = {}; // label -> id
+            adminQuestions.forEach(q => { if (q.id) idMap[q.label] = q.id; });
+            
+            // 先從歷史/全域資料帶入
+            Object.keys(userResponses).forEach(label => { if (idMap[label]) currentAnswers[idMap[label]] = userResponses[label]; });
+            Object.keys(allSurveyResponses).forEach(label => { if (idMap[label]) currentAnswers[idMap[label]] = allSurveyResponses[label]; });
+
+            // 2. 從目前畫面上的 DOM 元素取得最新值 (覆蓋之前的)
             document.querySelectorAll('.survey-question-wrap').forEach(wrap => {
                 const qId = wrap.dataset.qid;
                 const checkboxes = wrap.querySelectorAll('input[type="checkbox"].survey-input');
                 if (checkboxes.length > 0) { currentAnswers[qId] = [...checkboxes].filter(c => c.checked).map(c => c.value).join(','); }
                 else { const el = wrap.querySelector('.survey-input'); if (el) currentAnswers[qId] = el.value; }
             });
+
+            // 3. 執行判斷
             document.querySelectorAll('.survey-question-wrap').forEach(wrap => {
                 const condStr = wrap.dataset.condition;
                 if (!condStr) return;
@@ -1792,19 +1803,36 @@
             const sec = surveySections[currentSectionIdx];
             if (!sec) return;
             const fieldsEl = document.getElementById('survey-dynamic-fields');
+
+            // 預先計算當前所有答案，用於消除閃爍
+            const currentAnswers = {};
+            const idMap = {};
+            adminQuestions.forEach(q => { if (q.id) idMap[q.label] = q.id; });
+            Object.keys(userResponses).forEach(label => { if (idMap[label]) currentAnswers[idMap[label]] = userResponses[label]; });
+            Object.keys(allSurveyResponses).forEach(label => { if (idMap[label]) currentAnswers[idMap[label]] = allSurveyResponses[label]; });
+
             fieldsEl.innerHTML = sec.questions.map(q => {
                 const condAttr = q.condition ? `data-condition='${JSON.stringify(q.condition)}'` : '';
                 const qId = q.id || q.label;
                 const prevVal = allSurveyResponses[q.label] || userResponses[q.label] || '';
                 const reqMark = q.required ? '<span class="text-rose-500 ml-0.5">*</span>' : '';
-                return `<div class="survey-question-wrap" data-qid="${qId}" ${condAttr}>
+
+                // 初始判斷隱藏狀態，避免閃爍
+                let isHidden = false;
+                if (q.condition && q.condition.questionId) {
+                    const match = (currentAnswers[q.condition.questionId] || '').split(',').map(s => s.trim()).includes(q.condition.answer);
+                    if (!match) isHidden = true;
+                }
+
+                return `<div class="survey-question-wrap ${isHidden ? 'sq-hidden' : ''}" data-qid="${qId}" ${condAttr}>
                     <div class="space-y-2 text-left">
                         <label class="text-[10px] font-black text-slate-400 uppercase px-1">${q.label}${reqMark}</label>
                         ${renderQInput(q, prevVal)}
                     </div>
                 </div>`;
             }).join('');
-            setTimeout(() => evaluateSurveyConditions(), 50);
+
+            evaluateSurveyConditions(); // 立即執行，不延遲
             renderSectionUI();
             safeCreateIcons();
         }
