@@ -1872,10 +1872,22 @@
                 if (!q.branches) continue;
                 const ans = answers[q.label];
                 const target = q.branches[ans];
-                if (!target || target === '__next__') break;
-                if (target === '__end__') { handleSaveSurvey(); return; }
-                const idx = surveySections.findIndex(s => s.id === target);
-                if (idx !== -1) { nextIdx = idx; break; }
+                
+                if (target && target !== '__next__') {
+                    if (target === '__end__') {
+                        console.log('Branch Logic: Jumping to End (__end__)');
+                        handleSaveSurvey(); 
+                        return; 
+                    }
+                    const idx = surveySections.findIndex(s => String(s.id) === String(target));
+                    if (idx !== -1) {
+                        console.log(`Branch Logic: Jumping from current section to section idx ${idx} (Target ID: ${target})`);
+                        nextIdx = idx; 
+                        break; 
+                    } else {
+                        console.warn(`Branch Logic: Target section ID "${target}" not found in current survey sections.`);
+                    }
+                }
             }
             if (nextIdx < surveySections.length) {
                 currentSectionIdx = nextIdx;
