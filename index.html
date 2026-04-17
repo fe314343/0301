@@ -1533,9 +1533,10 @@
 
         function renderAdminQuestions() {
             const list = document.getElementById('sur-admin-questions-list'); if (!list) return;
-            adminQuestions.forEach((q, i) => { if (!q.id) q.id = 'q' + (Date.now() + i); });
-            // 可作條件/跳轉來源的選擇題
-            const condSources = adminQuestions.filter(q => q.type === 'select' || q.type === 'yesno');
+            const generateUniqueId = (prefix) => prefix + Date.now() + Math.random().toString(36).substr(2, 5);
+            adminQuestions.forEach((q, i) => { if (!q.id) q.id = generateUniqueId(q.type === 'section' ? 's' : 'q'); });
+            // 可作條件/跳轉來源的選擇題 (納入多選)
+            const condSources = adminQuestions.filter(q => q.type === 'select' || q.type === 'yesno' || q.type === 'multiselect');
             // 可跳轉的區段（section 題型）
             const sections = adminQuestions.filter(q => q.type === 'section');
             const branchTargetOptions = `<option value="__next__">下一區段（預設）</option><option value="__end__">提交問卷</option>` +
@@ -1559,11 +1560,11 @@
                     </div>`;
                 }
                 // ── 條件顯示來源選項 ──
-                const condSrc2 = condSources.filter(s => s.id !== q.id);
+                const condSrc2 = condSources.filter(s => String(s.id) !== String(q.id));
                 const condOptions = condSrc2.map(s => {
                     const opts = (s.type === 'yesno') ? ['是', '否'] : (s.options || '').split(',').map(o => o.trim()).filter(Boolean);
                     return `<optgroup label="${s.label || '題目'}">` + opts.map(o =>
-                        `<option value="${s.id}|${o}" ${(q.condition && q.condition.questionId === s.id && q.condition.answer === o) ? 'selected' : ''}>${s.label}: ${o}</option>`
+                        `<option value="${s.id}|${o}" ${(q.condition && String(q.condition.questionId) === String(s.id) && q.condition.answer === o) ? 'selected' : ''}>${s.label}: ${o}</option>`
                     ).join('') + '</optgroup>';
                 }).join('');
                 const hasCondition = q.condition && q.condition.questionId;
@@ -1614,7 +1615,7 @@
                             <option value="">永遠顯示（無條件）</option>
                             ${condOptions}
                         </select>
-                        ${hasCondition ? `<p class="text-[9px] text-indigo-400 mt-1 font-bold">▶ 當「${adminQuestions.find(s => s.id === q.condition.questionId)?.label || ''}」選「${q.condition.answer}」時才顯示</p>` : ''}
+                        ${hasCondition ? `<p class="text-[9px] text-indigo-400 mt-1 font-bold">▶ 當「${adminQuestions.find(s => String(s.id) === String(q.condition.questionId))?.label || ''}」選「${q.condition.answer}」時才顯示</p>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -1977,8 +1978,16 @@
                 modal.style.display = 'none';
             }
         }
-        function addSurveyQuestion() { adminQuestions.push({ id: 'q' + Date.now(), label: "新題目", type: "text", options: "", required: false, condition: null, branches: {} }); renderAdminQuestions(); }
-        function addSurveySection() { adminQuestions.push({ id: 's' + Date.now(), label: "新區段", type: "section" }); renderAdminQuestions(); }
+        function addSurveyQuestion() { 
+            const newId = 'q' + Date.now() + Math.random().toString(36).substr(2, 5);
+            adminQuestions.push({ id: newId, label: "新題目", type: "text", options: "", required: false, condition: null, branches: {} }); 
+            renderAdminQuestions(); 
+        }
+        function addSurveySection() { 
+            const newId = 's' + Date.now() + Math.random().toString(36).substr(2, 5);
+            adminQuestions.push({ id: newId, label: "新區段", type: "section" }); 
+            renderAdminQuestions(); 
+        }
         function moveAdminQuestion(i, dir) { const j = i + dir; if (j < 0 || j >= adminQuestions.length) return;[adminQuestions[i], adminQuestions[j]] = [adminQuestions[j], adminQuestions[i]]; renderAdminQuestions(); }
         function removeAdminQuestion(i) { adminQuestions.splice(i, 1); renderAdminQuestions(); }
 
