@@ -201,7 +201,7 @@
                     <div class="absolute w-4 h-4 rounded-full border border-emerald-400 animate-ping opacity-20"></div>
                 </div>
                 <span id="nav-user-info" class="text-sm font-bold text-slate-700 tracking-tight">載入中...</span>
-                <span class="text-[8px] text-slate-300 font-mono ml-2">v48</span>
+                <span class="text-[8px] text-slate-300 font-mono ml-2">v49</span>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="getAndRegisterToken()" title="同步推播設定"
@@ -544,8 +544,13 @@
     <!-- Modals -->
 
     <script>
+        window.onerror = function(msg, url, line, col, error) {
+            console.error("Global Error:", msg, "at", url, ":", line);
+            if (typeof showToast === 'function') showToast("JS 錯誤: " + msg, true);
+            return false;
+        };
 
-        // --- 核心工具 ---
+        // v49: 強化彈窗開啟魯棒性與錯誤捕獲
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxXYCpCifba8ltSrkSMJx9qF2_wNbSZN8Gm7VnOxFdc_p6PWPf8_0H4uQZ_37h2bupr/exec";
         const MAX_DISTANCE = 500, ALLOWED_LOCATIONS = [{ name: "崇正寶宮", lat: 24.1059419, lng: 120.5055394 }];
         //const MAX_DISTANCE = 500, ALLOWED_LOCATIONS = [{ name: "崇正寶宮", lat: 24.133658, lng: 120.717338 }];
@@ -897,74 +902,72 @@
         }
 
         function openProfileModal() {
-            if (!currentUser) return;
-            const nameInput = document.getElementById('profile-name-input');
-            const profileInitial = document.getElementById('profile-initial');
-            const roleEl = document.getElementById('profile-role');
-            const emailEl = document.getElementById('profile-email');
-            const sectionEl = document.getElementById('profile-section-display');
-            const instSelect = document.getElementById('profile-instrument-input');
             const modal = document.getElementById('profile-modal');
-
-            if (nameInput) nameInput.value = currentUser.Name || "";
-            if (profileInitial) profileInitial.innerText = (currentUser.Name || "?").charAt(0);
-            if (roleEl) roleEl.innerText = currentUser.Role || "Member";
-            if (emailEl) emailEl.innerText = (currentUser.Email || "").toLowerCase();
-            if (sectionEl) sectionEl.innerText = currentUser.Section || "-";
-
-            // --- 新增：載入個資 ---
-            const phoneInput = document.getElementById('profile-phone');
-            const bdayInput = document.getElementById('profile-birthday');
-            const idInput = document.getElementById('profile-id-number');
-            if (phoneInput) phoneInput.value = currentUser.Phone || "";
-            if (bdayInput) {
-                let d = currentUser.Birthday;
-                if (d) {
-                    // 用本地時區解析，避免 UTC vs UTC+8 造成日期少一天
-                    const dt = new Date(d);
-                    if (!isNaN(dt.getTime())) {
-                        const y = dt.getFullYear();
-                        const mo = String(dt.getMonth() + 1).padStart(2, '0');
-                        const da = String(dt.getDate()).padStart(2, '0');
-                        d = `${y}-${mo}-${da}`;
-                    }
-                }
-                bdayInput.value = d || "";
-            }
-            if (idInput) idInput.value = currentUser.ID_Number || "";
-
-            if (instSelect) {
-                instSelect.innerHTML = (orchestraData[currentUser.Section] || []).map(i => `<option value="${i}" ${i === currentUser.Instrument ? 'selected' : ''}>${i}</option>`).join('');
-            }
-
-            // --- 更新診斷資訊 ---
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-            const hasNotif = ("Notification" in window);
-            const diagPwa = document.getElementById('diag-pwa');
-            const diagSupport = document.getElementById('diag-support');
-            const diagPermission = document.getElementById('diag-permission');
-            if (diagPwa) diagPwa.innerText = isStandalone ? "YES" : "NO";
-            if (diagSupport) diagSupport.innerText = hasNotif ? "YES" : "NO";
-            if (diagPermission) diagPermission.innerText = hasNotif ? Notification.permission : "N/A";
-
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
-                switchProfileTab('basic'); 
-                
-                // v42: 診斷內容初始化
+            }
+            try {
+                if (!currentUser) return;
+                const nameInput = document.getElementById('profile-name-input');
+                const profileInitial = document.getElementById('profile-initial');
+                const roleEl = document.getElementById('profile-role');
+                const emailEl = document.getElementById('profile-email');
+                const sectionEl = document.getElementById('profile-section-display');
+                const instSelect = document.getElementById('profile-instrument-input');
+
+                if (nameInput) nameInput.value = currentUser.Name || "";
+                if (profileInitial) profileInitial.innerText = (currentUser.Name || "?").charAt(0);
+                if (roleEl) roleEl.innerText = currentUser.Role || "Member";
+                if (emailEl) emailEl.innerText = (currentUser.Email || "").toLowerCase();
+                if (sectionEl) sectionEl.innerText = currentUser.Section || "-";
+
+                const phoneInput = document.getElementById('profile-phone');
+                const bdayInput = document.getElementById('profile-birthday');
+                const idInput = document.getElementById('profile-id-number');
+                if (phoneInput) phoneInput.value = currentUser.Phone || "";
+                if (bdayInput) {
+                    let d = currentUser.Birthday;
+                    if (d) {
+                        const dt = new Date(d);
+                        if (!isNaN(dt.getTime())) {
+                            const y = dt.getFullYear();
+                            const mo = String(dt.getMonth() + 1).padStart(2, '0');
+                            const da = String(dt.getDate()).padStart(2, '0');
+                            d = `${y}-${mo}-${da}`;
+                        }
+                    }
+                    bdayInput.value = d || "";
+                }
+                if (idInput) idInput.value = currentUser.ID_Number || "";
+
+                if (instSelect) {
+                    instSelect.innerHTML = (orchestraData[currentUser.Section] || []).map(i => `<option value="${i}" ${i === currentUser.Instrument ? 'selected' : ''}>${i}</option>`).join('');
+                }
+
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+                const hasNotif = ("Notification" in window);
+                const diagPwa = document.getElementById('diag-pwa');
+                const diagSupport = document.getElementById('diag-support');
+                const diagPermission = document.getElementById('diag-permission');
+                if (diagPwa) diagPwa.innerText = isStandalone ? "YES" : "NO";
+                if (diagSupport) diagSupport.innerText = hasNotif ? "YES" : "NO";
+                if (diagPermission) diagPermission.innerText = hasNotif ? Notification.permission : "N/A";
+
+                switchProfileTab('basic');
                 const diagVal = document.getElementById('diag-push-result');
                 if (diagVal) diagVal.innerText = "尚未發起診斷";
-                
-                // v44: 權限過濾，僅管理員可見診斷面板
+
                 const pushDiagPanel = document.getElementById('diag-push-panel');
                 if (pushDiagPanel) {
                     const isAdmin = currentUser && (currentUser.Role === 'Admin' || currentUser.role === 'Admin');
                     pushDiagPanel.classList.toggle('hidden', !isAdmin);
                 }
+                safeCreateIcons();
+                requestNotificationPermission();
+            } catch (err) {
+                console.error("Profile modal data error:", err);
             }
-            safeCreateIcons();
-            requestNotificationPermission();
         }
 
         function switchProfileTab(tab) {
@@ -1393,18 +1396,23 @@
         }
 
         function openEditModal(id) {
-            editingId = id; const ev = id ? allEvents.find(e => String(e.ID) === String(id)) : null;
-            const modalTitle = document.getElementById('modal-title');
-            if (modalTitle) modalTitle.innerText = id ? "編輯活動" : "新增活動";
-            const fields = { 'edit-name': 'Name', 'edit-date': 'Date', 'edit-start': 'StartTime', 'edit-end': 'EndTime', 'edit-rest-start': 'RestStart', 'edit-rest-end': 'RestEnd' };
-            for (let id in fields) {
-                const el = document.getElementById(id);
-                if (el) el.value = ev ? (ev[fields[id]] || "") : (id === 'edit-date' ? new Date().toISOString().split('T')[0] : (id === 'edit-start' ? "19:00" : (id === 'edit-end' ? "21:30" : "")));
-            }
             const modal = document.getElementById('edit-modal');
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
+            }
+            try {
+                editingId = id; const ev = id ? allEvents.find(e => String(e.ID) === String(id)) : null;
+                const modalTitle = document.getElementById('modal-title');
+                if (modalTitle) modalTitle.innerText = id ? "編輯活動" : "新增活動";
+                const fields = { 'edit-name': 'Name', 'edit-date': 'Date', 'edit-start': 'StartTime', 'edit-end': 'EndTime', 'edit-rest-start': 'RestStart', 'edit-rest-end': 'RestEnd' };
+                for (let fid in fields) {
+                    const el = document.getElementById(fid);
+                    if (el) el.value = ev ? (ev[fields[fid]] || "") : (fid === 'edit-date' ? new Date().toISOString().split('T')[0] : (fid === 'edit-start' ? "19:00" : (fid === 'edit-end' ? "21:30" : "")));
+                }
+                safeCreateIcons();
+            } catch (err) {
+                console.error("Edit modal data error:", err);
             }
         }
 
@@ -1910,37 +1918,43 @@
         }
 
         function openSurveyModal() {
-            const title = document.getElementById('survey-display-title')?.innerText || "";
-            const desc = document.getElementById('survey-display-desc')?.innerText || "";
-            document.getElementById('survey-modal-title').innerText = title;
-            document.getElementById('survey-modal-desc').innerText = desc;
-            const modalContent = document.getElementById('survey-modal-content');
-            if (currentEmbedURL && currentEmbedURL.trim() !== "") {
-                modalContent.classList.replace('max-w-sm', 'max-w-3xl');
-                document.getElementById('survey-dynamic-fields').classList.add('hidden');
-                document.getElementById('survey-iframe-container').classList.remove('hidden');
-                document.getElementById('survey-external-frame').src = currentEmbedURL;
-                document.getElementById('survey-next-btn').classList.add('hidden');
-                document.getElementById('save-survey-btn').classList.remove('hidden');
-                document.getElementById('survey-section-indicator').classList.add('hidden');
-            } else {
-                modalContent.classList.replace('max-w-3xl', 'max-w-sm');
-                document.getElementById('survey-iframe-container').classList.add('hidden');
-                document.getElementById('survey-dynamic-fields').classList.remove('hidden');
-                // 初始化多區段狀態
-                allSurveyResponses = {};
-                sectionHistory = [];
-                currentSectionIdx = 0;
-                surveySections = buildSurveySections(surveyQuestions || []);
-                if (surveySections.length === 0) surveySections = [{ id: '__s0__', title: '', questions: surveyQuestions || [] }];
-                renderCurrentSection();
-            }
             const modal = document.getElementById('survey-modal');
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
             }
-            safeCreateIcons();
+            try {
+                const title = document.getElementById('survey-display-title')?.innerText || "";
+                const desc = document.getElementById('survey-display-desc')?.innerText || "";
+                const modalTitle = document.getElementById('survey-modal-title');
+                const modalDesc = document.getElementById('survey-modal-desc');
+                if (modalTitle) modalTitle.innerText = title;
+                if (modalDesc) modalDesc.innerText = desc;
+                
+                const modalContent = document.getElementById('survey-modal-content');
+                if (currentEmbedURL && currentEmbedURL.trim() !== "") {
+                    modalContent.classList.replace('max-w-sm', 'max-w-3xl');
+                    document.getElementById('survey-dynamic-fields').classList.add('hidden');
+                    document.getElementById('survey-iframe-container').classList.remove('hidden');
+                    document.getElementById('survey-external-frame').src = currentEmbedURL;
+                    document.getElementById('survey-next-btn').classList.add('hidden');
+                    document.getElementById('save-survey-btn').classList.remove('hidden');
+                    document.getElementById('survey-section-indicator').classList.add('hidden');
+                } else {
+                    modalContent.classList.replace('max-w-3xl', 'max-w-sm');
+                    document.getElementById('survey-iframe-container').classList.add('hidden');
+                    document.getElementById('survey-dynamic-fields').classList.remove('hidden');
+                    allSurveyResponses = {};
+                    sectionHistory = [];
+                    currentSectionIdx = 0;
+                    surveySections = buildSurveySections(surveyQuestions || []);
+                    if (surveySections.length === 0) surveySections = [{ id: '__s0__', title: '', questions: surveyQuestions || [] }];
+                    renderCurrentSection();
+                }
+                safeCreateIcons();
+            } catch (err) {
+                console.error("Survey modal data error:", err);
+            }
         }
 
         function closeSurveyModal() {
@@ -2219,11 +2233,11 @@
     <!-- 所有 Modal 統一放置於底部確保 z-index 正常 -->
 
     <!-- 個人資料編輯 Modal -->
-    <div id="profile-modal" class="hidden fixed inset-0 z-[10100] flex items-center justify-center p-6 shadow-2xl overflow-hidden">
+    <div id="profile-modal" class="hidden fixed inset-0 z-[10100] flex items-center justify-center p-6 shadow-2xl">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeProfileModal()"></div>
         <div class="bg-white w-full max-w-sm rounded-[40px] shadow-2xl p-8 relative fade-up flex flex-col items-center max-h-[90vh]"
             style="z-index: 10106;">
-            <div class="w-full overflow-y-auto pr-2 custom-scrollbar flex flex-col items-center pb-2">
+            <div class="w-full flex-1 overflow-y-auto pr-2 custom-scrollbar flex flex-col items-center pb-2">
             <div class="w-24 h-24 rounded-[32px] bg-slate-800 text-white flex items-center justify-center font-[900] text-3xl mb-4 shadow-xl border-4 border-white"
                 id="profile-initial">-</div>
             <div class="w-full space-y-2 mb-6 text-center">
@@ -2303,11 +2317,12 @@
                             class="w-full px-4 py-4 rounded-2xl bg-white border-none outline-none font-bold text-sm shadow-sm"
                             placeholder="A123456789"></div>
                 </div>
+                <button onclick="openPrivacyModal()" class="w-full py-4 mt-2 bg-white text-indigo-600 rounded-[18px] font-black text-xs flex items-center justify-center gap-2 border border-slate-100 shadow-sm">
                     <i data-lucide="file-text" class="w-4 h-4"></i> 查看個資同意書
                 </button>
 
                 <!-- v42: 推播診斷專區 -->
-                <div class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div id="diag-push-panel" class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <h5 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                         <i data-lucide="activity" class="w-3.5 h-3.5"></i> 系統通訊診斷 (v42)
                     </h5>
@@ -2335,7 +2350,7 @@
     </div>
 
     <!-- 活動編輯 Modal -->
-    <div id="edit-modal" class="hidden fixed inset-0 z-[10101] flex items-center justify-center p-6 shadow-2xl overflow-hidden">
+    <div id="edit-modal" class="hidden fixed inset-0 z-[10101] flex items-center justify-center p-6 shadow-2xl">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md text-center" onclick="closeEditModal()"></div>
         <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up text-center flex flex-col max-h-[90vh]"
             style="z-index: 10106;">
@@ -2384,7 +2399,7 @@
         </div>
     </div>
 
-    <div id="announcement-modal" class="hidden fixed inset-0 z-[10102] flex items-center justify-center p-6 overflow-hidden">
+    <div id="announcement-modal" class="hidden fixed inset-0 z-[10102] flex items-center justify-center p-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeAnnouncementModal()"></div>
         <div class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-8 relative fade-up flex flex-col max-h-[90vh]" style="z-index: 10106;">
             <h3 class="text-xl font-[900] text-slate-800 mb-6 tracking-tight flex items-center justify-center gap-2"><i
@@ -2402,7 +2417,7 @@
     </div>
 
     <!-- 問卷管理 Modal -->
-    <div id="survey-admin-modal" class="hidden fixed inset-0 z-[10103] flex items-center justify-center p-6 overflow-hidden">
+    <div id="survey-admin-modal" class="hidden fixed inset-0 z-[10103] flex items-center justify-center p-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeSurveyAdminModal()"></div>
         <div class="bg-white w-full max-w-lg rounded-[36px] shadow-2xl p-8 relative fade-up max-h-[90vh] flex flex-col"
             style="z-index: 10106;">
@@ -2474,7 +2489,7 @@
     </div>
 
     <!-- 問卷填寫 Modal -->
-    <div id="survey-modal" class="hidden fixed inset-0 z-[10104] flex items-center justify-center p-6 shadow-2xl overflow-hidden">
+    <div id="survey-modal" class="hidden fixed inset-0 z-[10104] flex items-center justify-center p-6 shadow-2xl">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeSurveyModal()"></div>
         <div id="survey-modal-content"
             class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-0 relative fade-up flex flex-col transition-all duration-500 overflow-hidden max-h-[90vh]"
@@ -2585,6 +2600,13 @@
         </div>
     </div>
 
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="hidden fixed top-12 left-1/2 -translate-x-1/2 flex items-center justify-center gap-3 px-6 py-4 rounded-[22px] glass-panel shadow-2xl z-[10200] transition-all transform duration-500 border-white text-center">
+        <div class="p-2 rounded-xl bg-white shadow-sm">
+            <i id="toast-icon" class="w-5 h-5"></i>
+        </div>
+        <span id="toast-msg" class="text-sm font-black tracking-tight"></span>
     </div>
 
     <script>
