@@ -1919,10 +1919,12 @@
 
         function openSurveyModal() {
             const modal = document.getElementById('survey-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.style.display = 'flex';
-            }
+            if (!modal) return;
+            
+            // 優先開啟容器
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            
             try {
                 const title = document.getElementById('survey-display-title')?.innerText || "";
                 const desc = document.getElementById('survey-display-desc')?.innerText || "";
@@ -1933,17 +1935,18 @@
                 
                 const modalContent = document.getElementById('survey-modal-content');
                 if (currentEmbedURL && currentEmbedURL.trim() !== "") {
-                    modalContent.classList.replace('max-w-sm', 'max-w-3xl');
-                    document.getElementById('survey-dynamic-fields').classList.add('hidden');
-                    document.getElementById('survey-iframe-container').classList.remove('hidden');
-                    document.getElementById('survey-external-frame').src = currentEmbedURL;
-                    document.getElementById('survey-next-btn').classList.add('hidden');
-                    document.getElementById('save-survey-btn').classList.remove('hidden');
-                    document.getElementById('survey-section-indicator').classList.add('hidden');
+                    if (modalContent) modalContent.classList.replace('max-w-sm', 'max-w-3xl');
+                    document.getElementById('survey-dynamic-fields')?.classList.add('hidden');
+                    document.getElementById('survey-iframe-container')?.classList.remove('hidden');
+                    const frame = document.getElementById('survey-external-frame');
+                    if (frame) frame.src = currentEmbedURL;
+                    document.getElementById('survey-next-btn')?.classList.add('hidden');
+                    document.getElementById('save-survey-btn')?.classList.remove('hidden');
+                    document.getElementById('survey-section-indicator')?.classList.add('hidden');
                 } else {
-                    modalContent.classList.replace('max-w-3xl', 'max-w-sm');
-                    document.getElementById('survey-iframe-container').classList.add('hidden');
-                    document.getElementById('survey-dynamic-fields').classList.remove('hidden');
+                    if (modalContent) modalContent.classList.replace('max-w-3xl', 'max-w-sm');
+                    document.getElementById('survey-iframe-container')?.classList.add('hidden');
+                    document.getElementById('survey-dynamic-fields')?.classList.remove('hidden');
                     allSurveyResponses = {};
                     sectionHistory = [];
                     currentSectionIdx = 0;
@@ -1951,7 +1954,7 @@
                     if (surveySections.length === 0) surveySections = [{ id: '__s0__', title: '', questions: surveyQuestions || [] }];
                     renderCurrentSection();
                 }
-                safeCreateIcons();
+                setTimeout(() => { safeCreateIcons(); }, 0);
             } catch (err) {
                 console.error("Survey modal data error:", err);
             }
@@ -2010,17 +2013,9 @@
         function openAnnouncementModal() {
             const modal = document.getElementById('announcement-modal');
             if (modal) {
-                // 強制隱藏所有可能衝突的 Modal
-                document.querySelectorAll('[id$="-modal"]').forEach(m => m.classList.add('hidden'));
-
                 modal.classList.remove('hidden');
-                modal.style.display = 'flex'; // 強制排版
-
-                console.log("Announcement modal opened - Forced Flex");
-                setTimeout(() => { safeCreateIcons(); }, 50);
-            } else {
-                console.error("Modal not found: announcement-modal");
-                showToast("系統錯誤：找不到公告視窗", true);
+                modal.style.display = 'flex';
+                setTimeout(() => { safeCreateIcons(); }, 0);
             }
         }
 
@@ -2492,7 +2487,7 @@
     <div id="survey-modal" class="hidden fixed inset-0 z-[10104] flex items-center justify-center p-6 shadow-2xl">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closeSurveyModal()"></div>
         <div id="survey-modal-content"
-            class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-0 relative fade-up flex flex-col transition-all duration-500 overflow-hidden max-h-[90vh]"
+            class="bg-white w-full max-w-sm rounded-[36px] shadow-2xl p-0 relative fade-up flex flex-col overflow-hidden max-h-[90vh]"
             style="z-index: 10106;">
             <div class="p-8 pb-3 text-center">
                 <h3 id="survey-modal-title" class="text-xl font-[900] text-slate-800 mb-1 tracking-tight">調查</h3>
