@@ -242,6 +242,11 @@
                             class="w-full pl-12 pr-6 py-4 rounded-[18px] bg-slate-100/50 outline-none border-none text-sm font-medium text-center"
                             placeholder="密碼"></div>
                 </div>
+                <!-- 新增：記住帳號密碼 -->
+                <div class="flex items-center justify-center gap-2 px-1 py-1">
+                    <input type="checkbox" id="remember-me" class="w-4 h-4 accent-indigo-600 rounded-lg cursor-pointer">
+                    <label for="remember-me" class="text-xs font-bold text-slate-400 cursor-pointer">下次自動登入 / 記住帳密</label>
+                </div>
                 <button id="login-submit-btn" onclick="handleLogin()"
                     class="relative w-full btn-premium text-white font-black py-4 rounded-[20px] text-lg tracking-wide shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">立即登入
                     <i data-lucide="arrow-right" class="w-5 h-5"></i></button>
@@ -741,8 +746,42 @@
             try {
                 currentUser = JSON.parse(storedUser);
                 console.log("Restored user from storage:", currentUser);
+                // v50: 確保 DOM 載入後執行自動登入
+                window.addEventListener('DOMContentLoaded', () => {
+                    handleAutoLogin();
+                });
             } catch (e) { localStorage.removeItem('user'); }
         }
+
+        function handleAutoLogin() {
+            if (!currentUser) return;
+            console.log("🚀 偵測到登入紀錄，正在自動進入系統...");
+            setupDashboard();
+            switchView('dashboard-view');
+            switchTab('home');
+            refreshSystemStatus();
+            loadAttendanceHistory();
+            setupUserPWA();
+        }
+
+        // v50: 恢復記住的帳密
+        function restoreRememberedCredentials() {
+            const remEmail = localStorage.getItem('remembered_email');
+            const remPwd = localStorage.getItem('remembered_password');
+            if (remEmail) {
+                const el = document.getElementById('login-email');
+                if (el) el.value = remEmail;
+            }
+            if (remPwd) {
+                const el = document.getElementById('login-password');
+                if (el) el.value = remPwd;
+            }
+            if (remEmail && remPwd) {
+                const el = document.getElementById('remember-me');
+                if (el) el.checked = true;
+            }
+        }
+        window.addEventListener('DOMContentLoaded', restoreRememberedCredentials);
 
         function formatDateTime(isoStr, onlyDate = false) {
             if (!isoStr) return "";
@@ -842,6 +881,16 @@
                 // 修正：從 res.userData 讀取，並存入 localStorage
                 currentUser = res.userData;
                 localStorage.setItem('user', JSON.stringify(currentUser));
+
+                // v50: 處理「記住帳密」邏輯
+                const rememberMe = document.getElementById('remember-me');
+                if (rememberMe && rememberMe.checked) {
+                    localStorage.setItem('remembered_email', emailEl.value.trim());
+                    localStorage.setItem('remembered_password', pwdEl.value.trim());
+                } else {
+                    localStorage.removeItem('remembered_email');
+                    localStorage.removeItem('remembered_password');
+                }
 
                 setupDashboard();
                 switchView('dashboard-view');
