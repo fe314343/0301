@@ -166,18 +166,23 @@ function getSurveyStatus(data) {
         let responded = false;
         let lastResponse = {};
 
-        // 加上保護：只有當有信箱，而且有回覆紀錄表時才去撈歷史
-        const respSheet = SS.getSheetByName("SurveyResponses");
-        if (respSheet && respSheet.getLastRow() > 1 && data && data.email) {
-            const resps = respSheet.getDataRange().getValues();
+        // v51: 優先從專屬分頁 SRV_ 讀取回覆狀態與歷史
+        const surveySheet = SS.getSheetByName("SRV_" + activeId);
+        if (surveySheet && surveySheet.getLastRow() > 1 && data && data.email) {
+            const resps = surveySheet.getDataRange().getValues();
+            const headers = resps[0];
             const email = String(data.email).toLowerCase().trim();
 
-            // 使用先反轉後尋找，確保找到最後一筆
-            const lastResp = [...resps].reverse().find(r => r[1] && String(r[1]).toLowerCase().trim() === email && String(r[3]) === String(activeId));
+            // 尋找該 Email 的最後一筆 (反轉搜尋)
+            const userRow = [...resps].reverse().find(r => r[1] && String(r[1]).toLowerCase().trim() === email);
 
-            if (lastResp) {
+            if (userRow) {
                 responded = true;
-                try { lastResponse = JSON.parse(lastResp[4] || "{}"); } catch (e) { }
+                // 從各欄位重建 lastResponse JSON
+                lastResponse = {};
+                for (let i = 3; i < headers.length; i++) {
+                    lastResponse[headers[i]] = userRow[i];
+                }
             }
         }
         return {
@@ -262,24 +267,46 @@ function getOrCreateSurveySheet(surveyId, title, questions) {
 
 function getSurveyResults(data) {
     try {
-        const template = SS.getSheetByName("SurveyTemplates").getDataRange().getValues().find(r => String(r[0]) === String(data.id));
-        if (!template) return { success: false, message: "找不到問卷" };
-        const questions = JSON.parse(template[3] || "[]");
-        const responses = SS.getSheetByName("SurveyResponses").getDataRange().getValues();
-        const results = questions.map(q => {
+        const surveyId = data.id;
+        const sheet = SS.getSheetByName("SRV_" + surveyId);
+        if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [], rawData: [] };
+
+        const vals = sheet.getDataRange().getValues();
+        const headers = vals[0];
+        const rows = vals.slice(1);
+
+        // 1. 統計各題結果 (跳過 填寫時間, Email, 姓名)
+        const results = [];
+        for (let col = 3; col < headers.length; col++) {
+            const label = headers[col];
             const stats = {};
-            responses.forEach(r => {
-                if (String(r[3]) === String(data.id)) {
-                    try {
-                        const userResp = JSON.parse(r[4] || "{}");
-                        const val = userResp[q.label];
-                        if (val) stats[val] = (stats[val] || 0) + 1;
-                    } catch (e) { }
+            rows.forEach(r => {
+                const val = String(r[col] || "").trim();
+                if (val) {
+                    // 如果是多選 (逗號分隔)，拆開計次
+                    if (val.includes(',')) {
+                        val.split(',').forEach(v => {
+                            const subV = v.trim();
+                            if (subV) stats[subV] = (stats[subV] || 0) + 1;
+                        });
+                    } else {
+                        stats[val] = (stats[val] || 0) + 1;
+                    }
                 }
             });
-            return { label: q.label, stats: stats };
+            results.push({ label: label, stats: stats });
+        }
+
+        // 2. 獲取原始回覆表格 (用於回覆管理清單)
+        const rawData = rows.map(r => {
+            const item = { time: Utilities.formatDate(r[0], "GMT+8", "MM/dd HH:mm"), email: r[1], name: r[2], answers: {} };
+            for (let i = 3; i < headers.length; i++) {
+                item.answers[headers[i]] = r[i];
+            }
+            return item;
         });
-        return { success: true, data: results };
+
+        return { success: true, data: results, rawData: rawData.reverse() };
     } catch (e) { return { success: false, message: e.toString() }; }
 }
 
