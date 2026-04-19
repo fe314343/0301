@@ -299,7 +299,16 @@ function getSurveyResults(data) {
 
         // 2. 獲取原始回覆表格 (用於回覆管理清單)
         const rawData = rows.map(r => {
-            const item = { time: Utilities.formatDate(r[0], "GMT+8", "MM/dd HH:mm"), email: r[1], name: r[2], answers: {} };
+            let timeStr = "";
+            try {
+                if (r[0] instanceof Date) {
+                    timeStr = Utilities.formatDate(r[0], "GMT+8", "MM/dd HH:mm");
+                } else {
+                    timeStr = String(r[0] || "");
+                }
+            } catch (e) { timeStr = String(r[0] || ""); }
+
+            const item = { time: timeStr, email: r[1], name: r[2], answers: {} };
             for (let i = 3; i < headers.length; i++) {
                 item.answers[headers[i]] = r[i];
             }

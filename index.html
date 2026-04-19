@@ -1599,10 +1599,16 @@
         }
 
         function switchSurveyAdminTab(tab) {
+            console.log("Switching survey admin tab to:", tab);
             const sections = ['config', 'result', 'list'];
             sections.forEach(s => {
-                const el = document.getElementById(`sur-admin-${s}`); if (el) el.classList.toggle('hidden', s !== tab);
-                const btn = document.getElementById(`sur-tab-${s}`); if (btn) { if (s === tab) btn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm'); else btn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm'); }
+                const el = document.getElementById(`sur-admin-${s}`);
+                if (el) el.classList.toggle('hidden', s !== tab);
+                const btn = document.getElementById(`sur-tab-${s}`);
+                if (btn) {
+                    if (s === tab) btn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+                    else btn.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                }
             });
             if (tab === 'result' || tab === 'list') loadSurveyResults();
         }
@@ -1721,6 +1727,7 @@
 
         async function loadSurveyResults() {
             const res = await callBackend('getSurveyResults', { id: editingSurveyId });
+            console.log("Survey Results Backend Response:", res);
             const resultEl = document.getElementById('sur-admin-result');
             const listEl = document.getElementById('sur-admin-list');
 
