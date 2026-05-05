@@ -723,7 +723,11 @@ function saveMember(data) {
         if (data.instrument) sheet.getRange(rowNum, 7).setValue(data.instrument);
         if (data.password && data.password.trim() !== "") sheet.getRange(rowNum, 5).setValue(data.password.trim());
 
-        if (data.phone !== undefined) sheet.getRange(rowNum, 10).setValue(data.phone);
+        if (data.phone !== undefined) {
+            const phoneCell = sheet.getRange(rowNum, 10);
+            phoneCell.setNumberFormat('@');  // 強制純文字，保留前導 0
+            phoneCell.setValue(String(data.phone));
+        }
         if (data.birthday !== undefined) sheet.getRange(rowNum, 11).setValue(data.birthday);
         if (data.idNumber !== undefined) sheet.getRange(rowNum, 12).setValue(data.idNumber);
         if (data.privacyConsent !== undefined) {
