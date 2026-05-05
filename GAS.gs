@@ -178,9 +178,9 @@ function getSurveyStatus(data) {
 
             if (userRow) {
                 responded = true;
-                // 從各欄位重建 lastResponse JSON
+                // 從各欄位重建 lastResponse JSON（從第 5 欄開始，跳過組別）
                 lastResponse = {};
-                for (let i = 3; i < headers.length; i++) {
+                for (let i = 4; i < headers.length; i++) {
                     lastResponse[headers[i]] = userRow[i];
                 }
             }
@@ -217,6 +217,7 @@ function submitSurveyResponse(data) {
         // 3. 準備資料列
         const userEmail = data.email.toLowerCase();
         const userName = data.name || "";
+        const userSection = data.section || "";
         const responses = JSON.parse(data.responsesJSON || "{}");
         const headers = surveySheet.getRange(1, 1, 1, surveySheet.getLastColumn()).getValues()[0];
         const rowData = new Array(headers.length).fill("");
@@ -224,9 +225,10 @@ function submitSurveyResponse(data) {
         rowData[0] = new Date(); // 時間
         rowData[1] = userEmail;
         rowData[2] = userName;
+        rowData[3] = userSection; // 組別
 
-        // 根據題目標籤填入欄位
-        for (let i = 3; i < headers.length; i++) {
+        // 根據題目標籤填入欄位（從第 5 欄開始）
+        for (let i = 4; i < headers.length; i++) {
             const label = headers[i];
             if (responses.hasOwnProperty(label)) rowData[i] = responses[label];
         }
@@ -252,8 +254,8 @@ function getOrCreateSurveySheet(surveyId, title, questions) {
     let sheet = SS.getSheetByName(sheetName);
     if (!sheet) sheet = SS.insertSheet(sheetName);
 
-    // 動態產生表頭：時間 | Email | 姓名 | [所有題目標籤...]
-    const expectedHeaders = ["填寫時間", "Email", "姓名"].concat(questions.map(q => q.label));
+    // 動態產生表頭：時間 | Email | 姓名 | 組別 | [所有題目標籤...]
+    const expectedHeaders = ["填寫時間", "Email", "姓名", "組別"].concat(questions.map(q => q.label));
     const currentHeaders = sheet.getLastColumn() > 0 ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0] : [];
 
     if (JSON.stringify(currentHeaders) !== JSON.stringify(expectedHeaders)) {
@@ -275,9 +277,9 @@ function getSurveyResults(data) {
         const headers = vals[0];
         const rows = vals.slice(1);
 
-        // 1. 統計各題結果 (跳過 填寫時間, Email, 姓名)
+        // 1. 統計各題結果 (跳過 填寫時間, Email, 姓名, 組別)
         const results = [];
-        for (let col = 3; col < headers.length; col++) {
+        for (let col = 4; col < headers.length; col++) {
             const label = headers[col];
             const stats = {};
             rows.forEach(r => {
@@ -308,8 +310,8 @@ function getSurveyResults(data) {
                 }
             } catch (e) { timeStr = String(r[0] || ""); }
 
-            const item = { time: timeStr, email: r[1], name: r[2], answers: {} };
-            for (let i = 3; i < headers.length; i++) {
+            const item = { time: timeStr, email: r[1], name: r[2], section: r[3] || "", answers: {} };
+            for (let i = 4; i < headers.length; i++) {
                 item.answers[headers[i]] = r[i];
             }
             return item;
@@ -489,7 +491,8 @@ function loginUser(data) {
             success: true,
             userData: {
                 ID: row[0], Name: row[1], Section: row[2], Email: row[3], Role: row[5], Instrument: row[6],
-                Phone: row[9] || "", Birthday: row[10] || "", ID_Number: row[11] || "", PrivacyConsent: row[12] || "NO"
+                Phone: (function(v){ var s=String(v||""); return (s&&/^\d+$/.test(s)&&!s.startsWith("0"))?"0"+s:s; })(row[9]),
+                Birthday: row[10] || "", ID_Number: row[11] || "", PrivacyConsent: row[12] || "NO"
             }
         };
     } catch (e) { return { success: false, message: e.toString() }; }

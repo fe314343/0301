@@ -987,7 +987,11 @@
                 const phoneInput = document.getElementById('profile-phone');
                 const bdayInput = document.getElementById('profile-birthday');
                 const idInput = document.getElementById('profile-id-number');
-                if (phoneInput) phoneInput.value = currentUser.Phone || "";
+                if (phoneInput) {
+                    let ph = String(currentUser.Phone || "");
+                    if (ph && /^\d+$/.test(ph) && !ph.startsWith("0")) ph = "0" + ph;
+                    phoneInput.value = ph;
+                }
                 if (bdayInput) {
                     let d = currentUser.Birthday;
                     if (d) {
@@ -1747,7 +1751,7 @@
                         <div class="bg-slate-50 p-4 rounded-2xl border border-white shadow-sm space-y-3">
                             <div class="flex justify-between items-start">
                                 <div class="text-left">
-                                    <p class="text-xs font-black text-slate-800">${r.name}</p>
+                                    <p class="text-xs font-black text-slate-800">${r.name} <span class="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-full">${r.section || ''}</span></p>
                                     <p class="text-[9px] text-slate-400 font-bold">${r.email}</p>
                                 </div>
                                 <span class="text-[9px] font-black text-indigo-400">${r.time}</span>
@@ -1809,8 +1813,13 @@
                 const labelStr = String(q.label || "").toLowerCase();
                 if (labelStr.includes("姓名") || labelStr.includes("名字") || labelStr === "name") {
                     prevVal = currentUser.Name || "";
+                } else if (labelStr.includes("組別") || labelStr.includes("聲部") || labelStr.includes("section") || labelStr === "組") {
+                    prevVal = currentUser.Section || "";
                 } else if (labelStr.includes("手機") || labelStr.includes("電話") || labelStr.includes("連絡") || labelStr.includes("聯絡") || labelStr.includes("phone")) {
-                    prevVal = currentUser.Phone || "";
+                    // 強制轉字串，修正 Google Sheets 數字格式造成前導 0 遺失的問題
+                    let ph = String(currentUser.Phone || "");
+                    if (ph && /^\d+$/.test(ph) && !ph.startsWith("0")) ph = "0" + ph;
+                    prevVal = ph;
                 } else if (labelStr.includes("身分證") || labelStr.includes("身份證") || labelStr.includes("id")) {
                     prevVal = currentUser.ID_Number || "";
                 } else if (labelStr.includes("生日") || labelStr.includes("出生") || labelStr.includes("birthday")) {
@@ -2084,7 +2093,7 @@
             });
             if (missing) return showToast(`「${missing.label}」為必填項目`, true);
             const btn = document.getElementById('save-survey-btn'); setBtnLoading(btn, true, "提交中...");
-            const res = await callBackend('submitSurveyResponse', { email: currentUser.Email, name: currentUser.Name, responsesJSON: JSON.stringify(allSurveyResponses) });
+            const res = await callBackend('submitSurveyResponse', { email: currentUser.Email, name: currentUser.Name, section: currentUser.Section || "", responsesJSON: JSON.stringify(allSurveyResponses) });
             setBtnLoading(btn, false, "提交回覆");
             if (res?.success) { showToast("回覆已提交"); closeSurveyModal(); fetchSurveyStatus(); }
         }
