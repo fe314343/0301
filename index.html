@@ -285,6 +285,7 @@
                         <option value="彈撥組">彈撥組</option>
                         <option value="揚打組">揚打組</option>
                         <option value="低音組">低音組</option>
+                        <option value="行政組">行政組（協助人員）</option>
                     </select>
                     <select id="reg-instrument"
                         class="px-5 py-4 rounded-[18px] bg-slate-100/50 border-none outline-none text-sm font-bold appearance-none text-center">
@@ -514,6 +515,23 @@
                         提示：此密碼用於團員在「不在崇正寶宮」定位範圍時簽到之用。建議設定 4-6 位數字。
                     </p>
                 </div>
+
+                <!-- 行政人員個資清單 (僅 Admin/Officer 可見) -->
+                <div id="admin-staff-panel"
+                    class="hidden glass-panel p-6 rounded-[32px] w-full shadow-lg border-white/40 bg-teal-50/30">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+                                <i data-lucide="contact" class="w-4 h-4"></i>
+                            </div>
+                            <h4 class="font-[900] text-slate-700 text-sm tracking-tight">行政協助人員</h4>
+                        </div>
+                        <button onclick="loadStaffList()"
+                            class="w-8 h-8 bg-white shadow-sm border border-slate-100 text-teal-600 rounded-xl flex items-center justify-center hover:rotate-180 transition-all duration-500">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                    </div>
+                    <div id="staff-list" class="space-y-3 max-h-[400px] overflow-y-auto hide-scroll"></div>
+                </div>
             </div>
 
             <!-- 分頁5: 問卷管理 -->
@@ -572,7 +590,7 @@
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxXYCpCifba8ltSrkSMJx9qF2_wNbSZN8Gm7VnOxFdc_p6PWPf8_0H4uQZ_37h2bupr/exec";
         //const MAX_DISTANCE = 500, ALLOWED_LOCATIONS = [{ name: "測試", lat: 24.1059419, lng: 120.5055394 }];
         const MAX_DISTANCE = 500, ALLOWED_LOCATIONS = [{ name: "崇正寶宮", lat: 24.133658, lng: 120.717338 }];
-        const orchestraData = { "吹管組": ["笛", "嗩", "笙", "(上)低音號"], "拉弦組": ["高胡", "二胡", "中胡"], "彈撥組": ["柳琴", "琵琶", "中阮", "大阮", "古箏"], "揚打組": ["揚琴", "打擊"], "低音組": ["大提琴", "低音提琴"] };
+        const orchestraData = { "吹管組": ["笛", "嗩", "笙", "(上)低音號"], "拉弦組": ["高胡", "二胡", "中胡"], "彈撥組": ["柳琴", "琵琶", "中阮", "大阮", "古箏"], "揚打組": ["揚琴", "打擊"], "低音組": ["大提琴", "低音提琴"], "行政組": ["攝影", "錄影", "音控", "燈光", "行政"] };
 
         let currentUser = null, currentEventData = null, allEvents = [], allSurveys = [], editingSurveyId = null, editingId = null, cachedMemberList = [];
         let surveyQuestions = [], userResponses = {}, adminQuestions = [], currentEmbedURL = "";
@@ -879,7 +897,7 @@
             ['home', 'history', 'monitor', 'broadcast', 'surveys'].forEach(s => { const el = document.getElementById(`${s}-section`); if (el) el.classList.toggle('hidden', s !== t); });
             if (t === 'home') { fetchAnnouncement(); fetchSurveyStatus(); }
             if (t === 'monitor') loadRealtimeStatus();
-            if (t === 'broadcast') loadEventList();
+            if (t === 'broadcast') { loadEventList(); loadStaffList(); }
             if (t === 'surveys') loadSurveyList();
             safeCreateIcons();
         }
@@ -935,10 +953,14 @@
             const isAdmin = ['Admin', 'Officer'].includes(currentUser.Role);
             const isActuallyAdmin = currentUser.Role === 'Admin';
             const isActuallyOfficer = currentUser.Role === 'Officer';
+            const isStaff = currentUser.Section === '行政組';
 
+            const btnHistory = document.getElementById('btn-history');
             const btnMonitor = document.getElementById('btn-monitor');
             const btnBroadcast = document.getElementById('btn-broadcast');
             const btnSurveys = document.getElementById('btn-surveys');
+            // 行政組隱藏簽到紀錄頁（不需出缺席追蹤）
+            if (btnHistory) btnHistory.classList.toggle('hidden', isStaff);
             if (btnMonitor) btnMonitor.classList.toggle('hidden', !isLeader && !isAdmin);
             if (btnBroadcast) btnBroadcast.classList.toggle('hidden', !isAdmin);
             if (btnSurveys) btnSurveys.classList.toggle('hidden', !isAdmin);
@@ -951,6 +973,10 @@
 
             const bypassConfig = document.getElementById('admin-bypass-config');
             if (bypassConfig) bypassConfig.classList.toggle('hidden', !isActuallyAdmin);
+
+            // 行政人員個資清單（僅 Admin/Officer 可見）
+            const staffPanel = document.getElementById('admin-staff-panel');
+            if (staffPanel) staffPanel.classList.toggle('hidden', !isAdmin);
 
             const monitorTitle = document.getElementById('monitor-title');
             if (monitorTitle) monitorTitle.innerText = isLeader ? `${currentUser.Section} 簽到狀態` : "全員簽到狀態";
@@ -1451,6 +1477,51 @@
             safeCreateIcons();
         }
 
+        async function loadStaffList() {
+            const listEl = document.getElementById('staff-list');
+            if (!listEl) return;
+            listEl.innerHTML = '<div class="py-10 flex flex-col items-center justify-center text-teal-400 gap-3"><div class="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin"></div><span class="text-xs font-bold">載入名單中...</span></div>';
+            try {
+                const res = await callBackend('getStaffList', {});
+                if (res?.success) {
+                    const staffs = res.data || [];
+                    if (staffs.length === 0) {
+                        listEl.innerHTML = '<div class="py-8 text-teal-300/60 font-bold text-center text-[10px]">目前無行政人員資料</div>';
+                    } else {
+                        listEl.innerHTML = staffs.map(s => {
+                            const consentHtml = s.PrivacyConsent.startsWith("YES") 
+                                ? `<span class="text-[8px] font-black text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1"><i data-lucide="check-circle" class="w-2.5 h-2.5"></i>已授權個資</span>`
+                                : `<span class="text-[8px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded flex items-center gap-1"><i data-lucide="alert-circle" class="w-2.5 h-2.5"></i>未授權個資</span>`;
+                                
+                            return `
+                            <div class="bg-white/80 p-4 rounded-[20px] shadow-sm flex flex-col gap-2 relative overflow-hidden group">
+                                <div class="absolute right-0 top-0 w-10 h-full bg-gradient-to-l from-teal-50 to-transparent opacity-50"></div>
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-black text-[10px] shrink-0 border-2 border-white shadow-sm">
+                                            ${s.Name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p class="font-black text-slate-700 text-sm flex items-center gap-1.5">${s.Name} <span class="text-[9px] font-bold text-teal-500 bg-teal-50 px-1.5 py-0.5 rounded-md border border-teal-100/50">${s.Instrument || '協助'}</span></p>
+                                            <p class="text-[10px] text-slate-400 font-bold mt-0.5 font-mono tracking-wider">${s.Phone || '無電話紀錄'}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-end gap-1.5">
+                                        ${consentHtml}
+                                        <span class="text-[9px] text-slate-300 font-bold uppercase">${s.ID_Number ? s.ID_Number.substring(0,4)+'***' : '無身分證'}</span>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                } else {
+                    listEl.innerHTML = `<div class="py-8 text-rose-400 font-bold text-center text-[10px]">載入失敗: ${res?.message || '未知錯誤'}</div>`;
+                }
+            } catch (e) {
+                listEl.innerHTML = '<div class="py-8 text-rose-400 font-bold text-center text-[10px]">連線錯誤</div>';
+            }
+            safeCreateIcons();
+        }
         async function activateEventFromList(id) {
             const res = await callBackend('activateEvent', { id });
             if (res?.success) { showToast("活動已開始廣播"); refreshSystemStatus(); loadEventList(); }

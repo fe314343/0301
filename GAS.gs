@@ -33,6 +33,7 @@ function doPost(e) {
             case 'deactivateEvent': result = deactivateEvent(); break;
             case 'updateDeviceToken': result = updateDeviceToken(data); break;
             case 'testPush': result = testPush(data); break;
+            case 'getStaffList': result = getStaffList(); break;
             default: result = { success: false, message: "未知指令" };
         }
     } catch (err) {
@@ -366,7 +367,11 @@ function getRealtimeStatus(userData) {
 
         // 計算樂團總共辦了幾場活動
         const totalEventsCount = Object.keys(uniqueEvents).length;
-        const data = members.slice(1).map(m => {
+        
+        // 過濾掉「行政組」，不讓他們出現在出缺席監控中
+        const filteredMembers = members.slice(1).filter(m => String(m[2] || "").trim() !== "行政組");
+        
+        const data = filteredMembers.map(m => {
             const email = String(m[3] || "").toLowerCase().trim();
             const stats = userStats[email] || { presentCount: 0, today: false };
 
@@ -403,6 +408,30 @@ function getRealtimeStatus(userData) {
         const stats = { present: data.filter(d => d.status === "已簽到").length, absent: data.filter(d => d.status !== "已簽到").length };
         return { success: true, data, stats, totalEvents: totalEventsCount };
     } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function getStaffList() {
+    try {
+        const memS = SS.getSheetByName("Members");
+        if (memS.getLastColumn() < 13) memS.insertColumnsAfter(memS.getLastColumn(), 13 - memS.getLastColumn());
+        const members = memS.getDataRange().getValues();
+        
+        // 只抓取行政組
+        const staffs = members.slice(1).filter(m => String(m[2] || "").trim() === "行政組").map(m => ({
+            Name: m[1],
+            Section: m[2],
+            Instrument: m[6], // 職能
+            Email: String(m[3] || "").toLowerCase().trim(),
+            Phone: m[9] || "",
+            Birthday: m[10] || "",
+            ID_Number: m[11] || "",
+            PrivacyConsent: m[12] || "NO"
+        }));
+        
+        return { success: true, data: staffs };
+    } catch (e) { 
+        return { success: false, message: e.toString() }; 
+    }
 }
 
 // --- 核心：自動補齊欄位工具 ---
