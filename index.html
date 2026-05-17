@@ -427,6 +427,9 @@
                                     class="text-lg tracking-tight">簽到</span></button>
                             <div id="btn-pulse" class="absolute inset-0 rounded-full"></div>
                         </div>
+                        <button onclick="openLeaveModal()" class="mt-6 text-sm font-black text-amber-500 bg-amber-50 px-6 py-2.5 rounded-full border border-amber-100 hover:bg-amber-100 active:scale-95 transition-all shadow-sm flex items-center justify-center gap-2">
+                            <i data-lucide="calendar-off" class="w-4 h-4"></i> 請假申請
+                        </button>
                     </div>
                 </div>
                 <div id="attendance-list" class="space-y-3 w-full"></div>
@@ -974,9 +977,9 @@
             const bypassConfig = document.getElementById('admin-bypass-config');
             if (bypassConfig) bypassConfig.classList.toggle('hidden', !isActuallyAdmin);
 
-            // 行政人員個資清單（僅 Admin/Officer 可見）
+            // 行政人員個資清單（僅 Admin 可見）
             const staffPanel = document.getElementById('admin-staff-panel');
-            if (staffPanel) staffPanel.classList.toggle('hidden', !isAdmin);
+            if (staffPanel) staffPanel.classList.toggle('hidden', !isActuallyAdmin);
 
             const monitorTitle = document.getElementById('monitor-title');
             if (monitorTitle) monitorTitle.innerText = isLeader ? `${currentUser.Section} 簽到狀態` : "全員簽到狀態";
@@ -1213,7 +1216,7 @@
             const res = await callBackend('getSystemStatus', { email: currentUser.Email });
             if (res?.success) {
                 currentEventData = res;
-                updateCheckinBtnStatus(res.hasCheckedIn);
+                updateCheckinBtnStatus(res.hasCheckedIn, res.hasLeaved);
                 const eventDisplay = document.getElementById('current-event-display');
                 if (eventDisplay) eventDisplay.innerText = res.enabled ? res.eventName : "目前暫無團練活動";
                 const ti = document.getElementById('checkin-time-display');
@@ -1231,12 +1234,18 @@
             }
         }
 
-        function updateCheckinBtnStatus(hasCheckedIn) {
+        function updateCheckinBtnStatus(hasCheckedIn, hasLeaved) {
             const btn = document.getElementById('checkin-btn'), pulse = document.getElementById('btn-pulse');
             if (!btn || !pulse) return;
             if (hasCheckedIn) {
-                btn.disabled = true; btn.className = "relative z-10 w-36 h-36 bg-emerald-500 rounded-full text-white font-black shadow-xl border-[10px] border-white flex flex-col items-center justify-center transition-all duration-700";
-                btn.innerHTML = '<i data-lucide="check-circle" class="w-12 h-12 mb-1"></i><span class="text-[10px] font-black uppercase">簽到完成</span>';
+                btn.disabled = true; 
+                if (hasLeaved) {
+                    btn.className = "relative z-10 w-36 h-36 bg-amber-500 rounded-full text-white font-black shadow-xl border-[10px] border-white flex flex-col items-center justify-center transition-all duration-700";
+                    btn.innerHTML = '<i data-lucide="calendar-check" class="w-12 h-12 mb-1"></i><span class="text-[10px] font-black uppercase">已請假</span>';
+                } else {
+                    btn.className = "relative z-10 w-36 h-36 bg-emerald-500 rounded-full text-white font-black shadow-xl border-[10px] border-white flex flex-col items-center justify-center transition-all duration-700";
+                    btn.innerHTML = '<i data-lucide="check-circle" class="w-12 h-12 mb-1"></i><span class="text-[10px] font-black uppercase">簽到完成</span>';
+                }
                 pulse.classList.remove('pulse-effect');
             } else {
                 const isEnabled = currentEventData?.enabled;
@@ -1291,9 +1300,72 @@
                 }
 
                 const res = await callBackend('submitCheckin', { email: currentUser.Email, name: currentUser.Name, section: currentUser.Section, date: currentEventData.eventDate, eventName: currentEventData.eventName, eventTimeRange: `${currentEventData.eventStart} ~ ${currentEventData.eventEnd}` });
-                if (res?.success) { showToast("簽到成功！排練愉快"); currentEventData.hasCheckedIn = true; updateCheckinBtnStatus(true); setTimeout(() => { refreshSystemStatus(); loadAttendanceHistory(); }, 1500); }
+                if (res?.success) { showToast("簽到成功！排練愉快"); currentEventData.hasCheckedIn = true; updateCheckinBtnStatus(true, false); setTimeout(() => { refreshSystemStatus(); loadAttendanceHistory(); }, 1500); }
                 else showToast(res.message || "簽到失敗", true);
             } catch (e) { showToast("定位失敗", true); btn.disabled = false; btn.innerHTML = oldH; safeCreateIcons(); }
+        }
+
+        function openLeaveModal() {
+            const modal = document.getElementById('leave-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                loadLeaveEvents();
+                safeCreateIcons();
+            }
+        }
+
+        function closeLeaveModal() {
+            const modal = document.getElementById('leave-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        }
+
+        async function loadLeaveEvents() {
+            const select = document.getElementById('leave-event-select');
+            if (!select) return;
+            select.innerHTML = '<option value="">載入近期活動中...</option>';
+            try {
+                const res = await callBackend('getUpcomingEvents', {});
+                if (res?.success && res.data && res.data.length > 0) {
+                    select.innerHTML = res.data.map(ev => `<option value="${ev.Name}|${ev.Date}">${ev.Name} (${ev.Date})</option>`).join('');
+                } else {
+                    select.innerHTML = '<option value="">目前無近期活動可選</option>';
+                }
+            } catch(e) {
+                select.innerHTML = '<option value="">載入失敗</option>';
+            }
+        }
+
+        async function submitLeaveApp() {
+            const select = document.getElementById('leave-event-select');
+            if (!select || !select.value) return showToast("請選擇請假活動", true);
+            
+            const [eventName, eventDate] = select.value.split('|');
+            const btn = document.getElementById('leave-submit-btn');
+            setBtnLoading(btn, true, "送出中...");
+            try {
+                const res = await callBackend('submitLeave', {
+                    email: currentUser.Email,
+                    name: currentUser.Name,
+                    section: currentUser.Section,
+                    eventName: eventName,
+                    date: eventDate
+                });
+                if (res?.success) {
+                    showToast("請假送出成功！");
+                    closeLeaveModal();
+                    setTimeout(() => { refreshSystemStatus(); loadAttendanceHistory(); }, 1000);
+                } else {
+                    showToast(res?.message || "請假失敗", true);
+                }
+            } catch(e) {
+                showToast("連線異常", true);
+            } finally {
+                setBtnLoading(btn, false, "送出請假");
+            }
         }
 
         async function handleSaveBypassCode() {
@@ -1602,18 +1674,19 @@
 
             // --- 更新組別統計數字 ---
             const presentCount = list.filter(m => m.status === '已簽到').length;
-            const absentCount = list.length - presentCount;
+            const leaveCount = list.filter(m => m.status === '請假').length;
+            const absentCount = list.length - presentCount - leaveCount;
             const presentEl = document.getElementById('stat-present');
             const absentEl = document.getElementById('stat-absent');
-            if (presentEl) presentEl.innerText = presentCount;
+            if (presentEl) presentEl.innerText = presentCount + leaveCount; // 將請假視為非缺席
             if (absentEl) absentEl.innerText = absentCount;
 
             if (sort === 'checkin') list.sort((a, b) => (a.status === '已簽到' ? -1 : 1));
             else if (sort === 'absence') {
                 list.sort((a, b) => {
                     // 1. 目前狀態優先 (未簽到/缺席 放在前面)
-                    const aMissing = a.status !== '已簽到';
-                    const bMissing = b.status !== '已簽到';
+                    const aMissing = (a.status !== '已簽到' && a.status !== '請假');
+                    const bMissing = (b.status !== '已簽到' && b.status !== '請假');
                     if (aMissing && !bMissing) return -1;
                     if (!aMissing && bMissing) return 1;
                     // 2. 若狀態相同，則看缺席次數 (多到少)
@@ -1623,7 +1696,10 @@
 
             if (listEl) listEl.innerHTML = list.map(m => {
                 const abs = m.absenceCount || 0;
-                return `<div class="bg-white/70 p-4 rounded-2xl flex justify-between items-center text-left"><div class="flex flex-col gap-1"><p class="font-black text-slate-800 text-xs">${m.Name} <span class="text-[9px] text-slate-400">(${m.Instrument})</span></p><p class="text-[10px] font-black ${getAbsenceColorClass(abs)}">缺 ${abs}</p></div><div class="text-right"><span class="text-xs font-black ${m.status === '已簽到' ? 'text-emerald-500' : 'text-rose-400'}">${m.status}</span></div></div>`
+                let statusColor = 'text-rose-400';
+                if (m.status === '已簽到') statusColor = 'text-emerald-500';
+                else if (m.status === '請假') statusColor = 'text-amber-500';
+                return `<div class="bg-white/70 p-4 rounded-2xl flex justify-between items-center text-left"><div class="flex flex-col gap-1"><p class="font-black text-slate-800 text-xs">${m.Name} <span class="text-[9px] text-slate-400">(${m.Instrument})</span></p><p class="text-[10px] font-black ${getAbsenceColorClass(abs)}">缺 ${abs}</p></div><div class="text-right"><span class="text-xs font-black ${statusColor}">${m.status}</span></div></div>`
             }).join('');
             safeCreateIcons();
         }
@@ -2792,6 +2868,31 @@
                     class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-[20px] font-black text-sm">先不要</button>
                 <button id="privacy-submit-btn" onclick="confirmPrivacyConsent()"
                     class="flex-1 py-4 btn-premium text-white rounded-[20px] font-black text-sm shadow-lg">同意並送出</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 請假申請 Modal -->
+    <div id="leave-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10100] items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-sm rounded-[32px] p-6 shadow-2xl border-white/60 text-center animate-in">
+            <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500 shadow-inner">
+                <i data-lucide="calendar-off" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-[900] text-slate-800 tracking-tight mb-2">請假申請</h3>
+            <p class="text-xs font-bold text-slate-500 mb-6">請選擇您要請假的活動，送出後不列入缺席紀錄。</p>
+            
+            <div class="space-y-4 mb-6 text-left">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">選擇請假活動</label>
+                    <select id="leave-event-select" class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500/50">
+                        <option value="">載入中...</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex gap-4">
+                <button onclick="closeLeaveModal()" class="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm hover:bg-slate-200 active:scale-95 transition-all">取消</button>
+                <button id="leave-submit-btn" onclick="submitLeaveApp()" class="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-sm shadow-lg shadow-amber-500/30 active:scale-95 transition-all">送出請假</button>
             </div>
         </div>
     </div>
