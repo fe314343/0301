@@ -822,8 +822,8 @@ function saveMember(data) {
 
         if (data.phone !== undefined) {
             const phoneCell = sheet.getRange(rowNum, 10);
-            phoneCell.setNumberFormat('@');  // 強制純文字，保留前導 0
-            phoneCell.setValue(String(data.phone));
+            phoneCell.setNumberFormat('@');  // 強制純文字
+            phoneCell.setValue("'" + String(data.phone)); // 加上單引號強制保留前導 0
         }
         if (data.birthday !== undefined) sheet.getRange(rowNum, 11).setValue(data.birthday);
         if (data.idNumber !== undefined) sheet.getRange(rowNum, 12).setValue(data.idNumber);
