@@ -1741,12 +1741,15 @@
             if (addSecBtn) addSecBtn.classList.toggle('hidden', !isActuallyAdmin);
             if (addQueBtn) addQueBtn.classList.toggle('hidden', !isActuallyAdmin);
 
+            // 組長只看「回覆管理」，隱藏「問卷設定」與「回覆統計」
+            const tabConfig = document.getElementById('sur-tab-config');
             const tabResult = document.getElementById('sur-tab-result');
+            if (tabConfig) tabConfig.style.display = isActuallyAdmin ? '' : 'none';
             if (tabResult) tabResult.style.display = isActuallyAdmin ? '' : 'none';
 
             const statusEl = document.getElementById('sur-admin-status'); if (statusEl) statusEl.checked = sur ? sur.Active : false;
             adminQuestions = []; if (sur && sur.QuestionsJSON) try { adminQuestions = JSON.parse(sur.QuestionsJSON); } catch (e) { adminQuestions = []; }
-            renderAdminQuestions(); switchSurveyAdminTab('config');
+            renderAdminQuestions(); switchSurveyAdminTab(isActuallyAdmin ? 'config' : 'list');
             const modal = document.getElementById('survey-admin-modal');
             if (modal) {
                 modal.classList.remove('hidden');
