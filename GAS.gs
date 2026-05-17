@@ -66,16 +66,18 @@ function getEventList() {
 function getUpcomingEvents() {
     try {
         const sheet = SS.getSheetByName("Events");
+        if (sheet.getLastRow() < 2) return { success: true, data: [] };
         const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
-        const now = new Date();
-        now.setHours(0, 0, 0, 0); // 只比對日期
+        const todayStr = Utilities.formatDate(new Date(), "GMT+8", "yyyy-MM-dd");
         
         const list = [];
         data.forEach(r => {
-            const eventDate = new Date(r[3]);
-            if (eventDate >= now) {
+            if (!r[3]) return;
+            // 統一格式化成 yyyy-MM-dd 再比較字串，避免時區或物件問題
+            const eventDateStr = r[3] instanceof Date ? Utilities.formatDate(r[3], "GMT+8", "yyyy-MM-dd") : String(r[3]);
+            if (eventDateStr >= todayStr) {
                 list.push({
-                    ID: r[0], Name: r[1], Type: r[2], Date: Utilities.formatDate(r[3], "GMT+8", "yyyy-MM-dd"),
+                    ID: r[0], Name: r[1], Type: r[2], Date: eventDateStr,
                     StartTime: formatTimeValue(r[4]), EndTime: formatTimeValue(r[5])
                 });
             }
