@@ -547,7 +547,7 @@
                         </div>
                         <h4 class="font-[900] text-slate-800 text-base tracking-tight">問卷庫</h4>
                     </div>
-                    <button onclick="openSurveyAdminModal(null)"
+                    <button id="btn-create-survey" onclick="openSurveyAdminModal(null)"
                         class="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-[10px] font-black border border-emerald-100 active:scale-95 flex items-center gap-2"><i
                             data-lucide="plus" class="w-3.5 h-3.5"></i>建立</button>
                 </div>
@@ -966,7 +966,10 @@
             if (btnHistory) btnHistory.classList.toggle('hidden', isStaff);
             if (btnMonitor) btnMonitor.classList.toggle('hidden', !isLeader && !isAdmin);
             if (btnBroadcast) btnBroadcast.classList.toggle('hidden', !isAdmin);
-            if (btnSurveys) btnSurveys.classList.toggle('hidden', !isAdmin);
+            if (btnSurveys) btnSurveys.classList.toggle('hidden', !isAdmin && !isLeader);
+
+            const btnCreateSurvey = document.getElementById('btn-create-survey');
+            if (btnCreateSurvey) btnCreateSurvey.classList.toggle('hidden', !isActuallyAdmin);
 
             const broadcastAddBtn = document.getElementById('broadcast-add-btn');
             const broadcastAnnounceBtn = document.getElementById('broadcast-announce-btn');
@@ -1877,7 +1880,7 @@
         }
 
         async function loadSurveyResults() {
-            const res = await callBackend('getSurveyResults', { id: editingSurveyId });
+            const res = await callBackend('getSurveyResults', { id: editingSurveyId, role: currentUser.Role, section: currentUser.Section });
             console.log("Survey Results Backend Response:", res);
             const resultEl = document.getElementById('sur-admin-result');
             const listEl = document.getElementById('sur-admin-list');

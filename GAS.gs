@@ -301,7 +301,12 @@ function getSurveyResults(data) {
 
         const vals = sheet.getDataRange().getValues();
         const headers = vals[0];
-        const rows = vals.slice(1);
+        let rows = vals.slice(1);
+
+        // 如果是 Leader 且有指定組別，則過濾
+        if (data.role === 'Leader' && data.section) {
+            rows = rows.filter(r => String(r[3] || "").trim() === data.section);
+        }
 
         // 1. 統計各題結果 (跳過 填寫時間, Email, 姓名, 組別)
         const results = [];
