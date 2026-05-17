@@ -266,8 +266,14 @@ function submitSurveyResponse(data) {
             if (String(sheetVals[i][1]).toLowerCase() === userEmail) { rowIdx = i + 1; break; }
         }
 
-        if (rowIdx !== -1) surveySheet.getRange(rowIdx, 1, 1, rowData.length).setValues([rowData]);
-        else surveySheet.appendRow(rowData);
+        if (rowIdx !== -1) {
+            surveySheet.getRange(rowIdx, 1, 1, rowData.length).setNumberFormat('@').setValues([rowData.map(v => v instanceof Date ? Utilities.formatDate(v, "GMT+8", "yyyy-MM-dd HH:mm:ss") : String(v))]);
+        } else {
+            const newRow = surveySheet.getLastRow() + 1;
+            const range = surveySheet.getRange(newRow, 1, 1, rowData.length);
+            range.setNumberFormat('@'); // 強制純文字，保留前導 0
+            range.setValues([rowData.map(v => v instanceof Date ? Utilities.formatDate(v, "GMT+8", "yyyy-MM-dd HH:mm:ss") : String(v))]);
+        }
 
         // 備份到總表 (選填)
         const master = SS.getSheetByName("SurveyResponses");
