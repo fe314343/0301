@@ -1899,20 +1899,52 @@
                     else resultEl.innerHTML = results.map(r => `<div class="p-4 bg-slate-50 rounded-xl space-y-2"><p class="text-xs font-black text-slate-700">${r.label}</p><div class="space-y-1">${Object.entries(r.stats || {}).map(([k, v]) => `<div class="flex justify-between text-[10px] font-bold text-slate-500"><span>${k}</span><span>${v} 票</span></div>`).join('')}</div></div>`).join('');
                 }
 
-                // 2. v51: 渲染回覆明細列表
+                // 2. 渲染回覆管理列表
                 if (listEl) {
-                    const rawData = res.rawData || [];
-                    if (rawData.length === 0) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前尚無回覆紀錄</div>';
-                    else listEl.innerHTML = rawData.map(r => `
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-white shadow-sm space-y-3">
-                            <div class="flex justify-between items-center">
-                                <div class="text-left">
-                                    <p class="text-sm font-black text-slate-800">${r.name} <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 ml-1 rounded-full">${r.section || ''}</span></p>
+                    const isLeader = currentUser.Role === 'Leader';
+                    const memberList = res.memberList || [];
+
+                    if (isLeader && memberList.length > 0) {
+                        // 組長模式：顯示該組全員名單 + 填寫狀態
+                        const filledCount = memberList.filter(m => m.filled).length;
+                        listEl.innerHTML = `
+                            <div class="flex justify-between items-center mb-4 px-1">
+                                <p class="text-[11px] font-black text-slate-500">全組 ${memberList.length} 人</p>
+                                <p class="text-[11px] font-black">
+                                    <span class="text-emerald-500">${filledCount} 已填</span>
+                                    <span class="text-slate-300 mx-1">|</span>
+                                    <span class="text-rose-400">${memberList.length - filledCount} 未填</span>
+                                </p>
+                            </div>` +
+                            memberList.map(m => `
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-white shadow-sm">
+                                    <div class="flex justify-between items-center">
+                                        <div class="text-left">
+                                            <p class="text-sm font-black text-slate-800">${m.name} <span class="text-[9px] font-bold text-slate-400">(${m.instrument})</span></p>
+                                        </div>
+                                        ${m.filled
+                                            ? '<span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 已填寫</span>'
+                                            : '<span class="text-[10px] font-black text-rose-400 bg-rose-50 px-2.5 py-1 rounded-lg flex items-center gap-1"><i data-lucide="circle-x" class="w-3.5 h-3.5"></i> 未填寫</span>'
+                                        }
+                                    </div>
                                 </div>
-                                <span class="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-lg flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i> 已填寫</span>
+                            `).join('');
+                        safeCreateIcons();
+                    } else {
+                        // Admin 模式：顯示已回覆清單
+                        const rawData = res.rawData || [];
+                        if (rawData.length === 0) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前尚無回覆紀錄</div>';
+                        else listEl.innerHTML = rawData.map(r => `
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-white shadow-sm space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <div class="text-left">
+                                        <p class="text-sm font-black text-slate-800">${r.name} <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 ml-1 rounded-full">${r.section || ''}</span></p>
+                                    </div>
+                                    <span class="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-lg flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i> 已填寫</span>
+                                </div>
                             </div>
-                        </div>
-                    `).join('');
+                        `).join('');
+                    }
                 }
             } else {
                 if (resultEl) resultEl.innerHTML = '<div class="py-10 text-rose-400 font-bold text-center">載入統計失敗</div>';

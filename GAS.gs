@@ -348,7 +348,24 @@ function getSurveyResults(data) {
             return item;
         });
 
-        return { success: true, data: results, rawData: rawData.reverse() };
+        // 3. 若為 Leader，回傳該組全員名單（含填寫狀態）
+        let memberList = [];
+        if (data.role === 'Leader' && data.section) {
+            const memS = SS.getSheetByName("Members");
+            const allMembers = memS.getDataRange().getValues().slice(1);
+            const sectionMembers = allMembers.filter(m => String(m[2] || "").trim() === data.section);
+            // 已填寫的 email 清單
+            const filledEmails = rows.map(r => String(r[1] || "").toLowerCase().trim());
+            memberList = sectionMembers.map(m => ({
+                name: m[1],
+                instrument: m[6] || "",
+                filled: filledEmails.includes(String(m[3] || "").toLowerCase().trim())
+            }));
+            // 已填寫排後面，未填寫排前面
+            memberList.sort((a, b) => a.filled === b.filled ? 0 : a.filled ? 1 : -1);
+        }
+
+        return { success: true, data: results, rawData: rawData.reverse(), memberList: memberList };
     } catch (e) { return { success: false, message: e.toString() }; }
 }
 
