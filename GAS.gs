@@ -821,9 +821,12 @@ function saveMember(data) {
         if (data.password && data.password.trim() !== "") sheet.getRange(rowNum, 5).setValue(data.password.trim());
 
         if (data.phone !== undefined) {
+            let p = String(data.phone).trim();
+            // 如果是全數字且沒有 0 開頭，強制補 0
+            if (p && /^\d+$/.test(p) && !p.startsWith("0")) p = "0" + p;
             const phoneCell = sheet.getRange(rowNum, 10);
             phoneCell.setNumberFormat('@');  // 強制純文字
-            phoneCell.setValue("'" + String(data.phone)); // 加上單引號強制保留前導 0
+            phoneCell.setValue(p); // 寫入字串
         }
         if (data.birthday !== undefined) sheet.getRange(rowNum, 11).setValue(data.birthday);
         if (data.idNumber !== undefined) sheet.getRange(rowNum, 12).setValue(data.idNumber);

@@ -1899,19 +1899,11 @@
                     if (rawData.length === 0) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前尚無回覆紀錄</div>';
                     else listEl.innerHTML = rawData.map(r => `
                         <div class="bg-slate-50 p-4 rounded-2xl border border-white shadow-sm space-y-3">
-                            <div class="flex justify-between items-start">
+                            <div class="flex justify-between items-center">
                                 <div class="text-left">
-                                    <p class="text-xs font-black text-slate-800">${r.name} <span class="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-full">${r.section || ''}</span></p>
+                                    <p class="text-sm font-black text-slate-800">${r.name} <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 ml-1 rounded-full">${r.section || ''}</span></p>
                                 </div>
-                                <span class="text-[9px] font-black text-indigo-400">${r.time}</span>
-                            </div>
-                            <div class="grid grid-cols-1 gap-2 border-t border-slate-200/50 pt-2">
-                                ${Object.entries(r.answers).map(([q, a]) => `
-                                    <div class="flex flex-col gap-0.5">
-                                        <p class="text-[9px] font-black text-slate-400 uppercase">${q}</p>
-                                        <p class="text-[10px] font-bold text-slate-600">${a || '(無填寫)'}</p>
-                                    </div>
-                                `).join('')}
+                                <span class="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-lg flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i> 已填寫</span>
                             </div>
                         </div>
                     `).join('');
