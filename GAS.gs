@@ -464,6 +464,7 @@ function getRealtimeStatus(userData) {
                 Name: m[1], Section: m[2], Instrument: m[6], Email: email,
                 status: statusText,
                 absenceCount: absenceCount,
+                leaveCount: stats.leaveCount,
                 Phone: m[9] || "", Birthday: m[10] || "", ID_Number: m[11] || "", PrivacyConsent: m[12] || "NO"
             };
         });
