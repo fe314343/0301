@@ -628,7 +628,8 @@ function submitLeave(data) {
             data.date, 
             "請假", 
             "系統請假", 
-            "請假"
+            "請假",
+            data.reason || ""
         ]);
         return { success: true };
     } catch (err) { 
