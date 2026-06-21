@@ -473,7 +473,9 @@ function getRealtimeStatus(userData) {
         const stats = { present: data.filter(d => d.status === "已簽到").length, absent: data.filter(d => d.status === "缺席").length, leave: data.filter(d => d.status === "請假").length };
         return { 
             success: true, data, stats, totalEvents: totalEventsCount,
-            eventStart: config[3], eventEnd: config[4], eventDate: currentEventDate
+            eventStart: formatTimeValue(config[3]), 
+            eventEnd: formatTimeValue(config[4]), 
+            eventDate: currentEventDate
         };
     } catch (e) { return { success: false, message: e.toString() }; }
 }

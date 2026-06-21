@@ -1746,17 +1746,20 @@
             const endTime = parseTime(endStr);
             const tenMinAfterStart = new Date(startTime.getTime() + 10 * 60 * 1000);
 
+            // 調試用：console.log("Now:", now, "Start+10:", tenMinAfterStart, "End:", endTime);
+
             let summaryHtml = "";
             const leaveList = list.filter(m => m.status === '請假');
             const absentList = list.filter(m => m.status === '缺席');
 
-            // 1. 活動開始 10 分鐘後且未結束 -> 顯示請假名單
-            if (now > tenMinAfterStart && now < endTime) {
+            // 1. 活動進行中 (不論是否過 10 分鐘，只要有請假就顯示，但 10 分鐘後標題變更)
+            if (now < endTime) {
                 if (leaveList.length > 0) {
+                    const isTenMinPassed = now > tenMinAfterStart;
                     summaryHtml = `
                         <div class="bg-amber-500/5 p-5 rounded-[28px] border border-amber-100/50">
                             <div class="flex justify-between items-center mb-4">
-                                <h5 class="text-[10px] font-black text-amber-600 uppercase tracking-widest">今日請假名單彙整</h5>
+                                <h5 class="text-[10px] font-black text-amber-600 uppercase tracking-widest">${isTenMinPassed ? '今日請假名單彙整' : '預約請假名單'}</h5>
                                 <div class="flex gap-2">
                                     <button onclick="copySummaryText('請假')" class="w-8 h-8 bg-white border border-amber-100 rounded-lg flex items-center justify-center text-amber-500 active:scale-95"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
                                     <button onclick="pushSummaryToMobile('請假')" class="w-8 h-8 bg-amber-500 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-sm shadow-amber-200"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
@@ -1765,16 +1768,17 @@
                             <div class="space-y-2">
                                 ${leaveList.map(m => `<div class="bg-white/60 p-3 rounded-xl"><p class="text-[11px] font-black text-slate-700">${m.Name} <span class="text-[9px] text-slate-400 font-bold ml-1">${m.todayReason ? '理由：' + m.todayReason : '(未填原因)'}</span></p></div>`).join('')}
                             </div>
+                            ${!isTenMinPassed ? '<p class="text-[8px] text-slate-400 font-bold mt-3 text-center">* 活動開始 10 分鐘後將彙整最終名單</p>' : ''}
                         </div>`;
                 }
             }
             // 2. 活動結束後 -> 顯示缺席名單
-            else if (now > endTime) {
+            else {
                 if (absentList.length > 0 || leaveList.length > 0) {
                     summaryHtml = `
                         <div class="bg-indigo-500/5 p-5 rounded-[28px] border border-indigo-100/50">
                             <div class="flex justify-between items-center mb-4">
-                                <h5 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">今日未到人員彙整</h5>
+                                <h5 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">今日考勤最終彙整</h5>
                                 <div class="flex gap-2">
                                     <button onclick="copySummaryText('缺席')" class="w-8 h-8 bg-white border border-indigo-100 rounded-lg flex items-center justify-center text-indigo-500 active:scale-95"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
                                     <button onclick="pushSummaryToMobile('缺席')" class="w-8 h-8 bg-indigo-500 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-sm shadow-indigo-200"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
