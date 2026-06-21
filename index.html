@@ -1761,8 +1761,8 @@
                             <div class="flex justify-between items-center mb-4">
                                 <h5 class="text-[10px] font-black text-amber-600 uppercase tracking-widest">${isTenMinPassed ? '今日請假名單彙整' : '預約請假名單'}</h5>
                                 <div class="flex gap-2">
-                                    <button onclick="copySummaryText('請假')" class="w-8 h-8 bg-white border border-amber-100 rounded-lg flex items-center justify-center text-amber-500 active:scale-95"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
-                                    <button onclick="pushSummaryToMobile('請假')" class="w-8 h-8 bg-amber-500 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-sm shadow-amber-200"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
+                                    <button onclick="copySummaryText('請假')" class="w-8 h-8 bg-white border border-amber-100 rounded-lg flex items-center justify-center text-amber-500 active:scale-95 transition-all"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                    <button onclick="pushSummaryToMobile('請假')" class="w-8 h-8 bg-amber-500 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-sm shadow-amber-200 transition-all"><i data-lucide="send" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
                             <div class="space-y-2">
@@ -1780,8 +1780,8 @@
                             <div class="flex justify-between items-center mb-4">
                                 <h5 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">今日考勤最終彙整</h5>
                                 <div class="flex gap-2">
-                                    <button onclick="copySummaryText('缺席')" class="w-8 h-8 bg-white border border-indigo-100 rounded-lg flex items-center justify-center text-indigo-500 active:scale-95"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
-                                    <button onclick="pushSummaryToMobile('缺席')" class="w-8 h-8 bg-indigo-500 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-sm shadow-indigo-200"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
+                                    <button onclick="copySummaryText('缺席')" class="w-8 h-8 bg-white border border-indigo-100 rounded-lg flex items-center justify-center text-indigo-500 active:scale-95 transition-all"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                    <button onclick="pushSummaryToMobile('缺席')" class="w-8 h-8 bg-indigo-500 text-white rounded-lg flex items-center justify-center active:scale-95 shadow-sm shadow-indigo-200 transition-all"><i data-lucide="send" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
                             <div class="space-y-3">
@@ -1799,6 +1799,9 @@
                 container.classList.add('hidden');
             }
             safeCreateIcons();
+            // v52: 增加二次觸發以確保動態元素已被捕獲
+            setTimeout(safeCreateIcons, 50);
+            setTimeout(safeCreateIcons, 500);
         }
 
         async function pushSummaryToMobile(type) {
