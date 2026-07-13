@@ -2405,7 +2405,8 @@
             select.innerHTML = '<option value="">選擇行政協助人員...</option>';
 
             // 限制僅 Admin 與 Officer (管理員與幹部) 可使用此功能
-            const isAdminOrOfficer = currentUser && ['Admin', 'Officer'].includes(currentUser.Role);
+            const userRole = String(currentUser?.Role || currentUser?.role || '').trim().toLowerCase();
+            const isAdminOrOfficer = userRole === 'admin' || userRole === 'officer';
             if (!isAdminOrOfficer) return;
 
             try {
