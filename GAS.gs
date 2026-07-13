@@ -248,10 +248,33 @@ function submitSurveyResponse(data) {
         const headers = surveySheet.getRange(1, 1, 1, surveySheet.getLastColumn()).getValues()[0];
         const rowData = new Array(headers.length).fill("");
 
+        // 優先從問卷答案中解析填寫對象的「姓名」與「組別/聲部」
+        let targetName = userName;
+        for (const key of Object.keys(responses)) {
+            const lowerKey = String(key).toLowerCase();
+            if (lowerKey.includes("姓名") || lowerKey.includes("名字") || lowerKey === "name") {
+                if (responses[key] && String(responses[key]).trim() !== "") {
+                    targetName = String(responses[key]).trim();
+                    break;
+                }
+            }
+        }
+
+        let targetSection = userSection;
+        for (const key of Object.keys(responses)) {
+            const lowerKey = String(key).toLowerCase();
+            if (lowerKey.includes("組別") || lowerKey.includes("聲部") || lowerKey.includes("section") || lowerKey.includes("組")) {
+                if (responses[key] && String(responses[key]).trim() !== "") {
+                    targetSection = String(responses[key]).trim();
+                    break;
+                }
+            }
+        }
+
         rowData[0] = new Date(); // 時間
         rowData[1] = userEmail;
-        rowData[2] = userName;
-        rowData[3] = userSection; // 組別
+        rowData[2] = targetName;   // 寫入實際填寫對象的姓名，而非僅登入者名字
+        rowData[3] = targetSection;// 寫入實際填寫對象的組別
 
         // 根據題目標籤填入欄位（從第 5 欄開始）
         for (let i = 4; i < headers.length; i++) {
@@ -259,11 +282,16 @@ function submitSurveyResponse(data) {
             if (responses.hasOwnProperty(label)) rowData[i] = responses[label];
         }
 
-        // 4. 重複填寫檢查 (Email 為主)
+        // 4. 重複填寫檢查 (以 Email ＋ 填寫對象姓名 為主，實現一帳號幫多人填寫)
         const sheetVals = surveySheet.getDataRange().getValues();
         let rowIdx = -1;
         for (let i = 1; i < sheetVals.length; i++) {
-            if (String(sheetVals[i][1]).toLowerCase() === userEmail) { rowIdx = i + 1; break; }
+            const rowEmail = String(sheetVals[i][1]).toLowerCase();
+            const rowName = String(sheetVals[i][2]).trim();
+            if (rowEmail === userEmail && rowName === targetName) { 
+                rowIdx = i + 1; 
+                break; 
+            }
         }
 
         if (rowIdx !== -1) {
