@@ -2420,6 +2420,7 @@
                         select.appendChild(opt);
                     });
                     container.classList.remove('hidden');
+                    container.classList.add('flex');
                 }
             } catch (e) {
                 console.error("Failed to load staff list for survey autofill:", e);
@@ -3015,7 +3016,7 @@
                 </div>
             </div>
             <!-- 快速帶入行政組個資選單 -->
-            <div id="survey-autofill-container" class="hidden px-8 pb-3 flex flex-col gap-1.5">
+            <div id="survey-autofill-container" class="hidden px-8 pb-3 flex-col gap-1.5">
                 <label
                     class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-left">快速帶入行政組個資</label>
                 <select id="survey-autofill-select" onchange="autofillSurveyWithStaff(this.value)"
