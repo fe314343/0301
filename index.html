@@ -2404,6 +2404,10 @@
             container.classList.add('hidden');
             select.innerHTML = '<option value="">選擇行政協助人員...</option>';
 
+            // 限制僅 Admin 與 Officer (管理員與幹部) 可使用此功能
+            const isAdminOrOfficer = currentUser && ['Admin', 'Officer'].includes(currentUser.Role);
+            if (!isAdminOrOfficer) return;
+
             try {
                 const res = await callBackend('getStaffList', {});
                 if (res?.success && res.data && res.data.length > 0) {
