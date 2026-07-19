@@ -263,7 +263,7 @@ function submitSurveyResponse(data) {
         let targetSection = userSection;
         for (const key of Object.keys(responses)) {
             const lowerKey = String(key).toLowerCase();
-            if (lowerKey.includes("組別") || lowerKey.includes("聲部") || lowerKey.includes("section") || lowerKey.includes("組")) {
+            if (lowerKey.includes("組別") || lowerKey.includes("聲部") || lowerKey.includes("section") || lowerKey === "組") {
                 if (responses[key] && String(responses[key]).trim() !== "") {
                     targetSection = String(responses[key]).trim();
                     break;
