@@ -388,13 +388,18 @@ function getSurveyResults(data) {
             const memS = SS.getSheetByName("Members");
             const allMembers = memS.getDataRange().getValues().slice(1);
             const sectionMembers = allMembers.filter(m => String(m[2] || "").trim() === data.section);
-            // 已填寫的 email 清單
+            // 收集已填寫的 email 與 姓名 清單 (相容自己填寫與他人代填)
             const filledEmails = rows.map(r => String(r[1] || "").toLowerCase().trim());
-            memberList = sectionMembers.map(m => ({
-                name: m[1],
-                instrument: m[6] || "",
-                filled: filledEmails.includes(String(m[3] || "").toLowerCase().trim())
-            }));
+            const filledNames = rows.map(r => String(r[2] || "").trim());
+            memberList = sectionMembers.map(m => {
+                const memName = String(m[1] || "").trim();
+                const memEmail = String(m[3] || "").toLowerCase().trim();
+                return {
+                    name: m[1],
+                    instrument: m[6] || "",
+                    filled: filledEmails.includes(memEmail) || filledNames.includes(memName)
+                };
+            });
             // 已填寫排後面，未填寫排前面
             memberList.sort((a, b) => a.filled === b.filled ? 0 : a.filled ? 1 : -1);
         }
