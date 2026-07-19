@@ -264,8 +264,12 @@ function submitSurveyResponse(data) {
         for (const key of Object.keys(responses)) {
             const lowerKey = String(key).toLowerCase();
             if (lowerKey.includes("組別") || lowerKey.includes("聲部") || lowerKey.includes("section") || lowerKey === "組") {
-                if (responses[key] && String(responses[key]).trim() !== "") {
-                    targetSection = String(responses[key]).trim();
+                const val = String(responses[key] || "").trim();
+                if (val !== "") {
+                    // 若回答中包含樂團已知組別名稱，則僅提取組別（防範如「拉弦組(大提琴)」造成樂器也一起寫入的情況）
+                    const sections = ["吹管組", "拉弦組", "彈撥組", "揚打組", "低音組", "行政組"];
+                    const matchedSec = sections.find(s => val.includes(s));
+                    targetSection = matchedSec || val;
                     break;
                 }
             }
