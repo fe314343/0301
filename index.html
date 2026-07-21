@@ -1104,12 +1104,13 @@
             const btn = document.getElementById('perf-submit-btn');
             const name = document.getElementById('perf-event-name')?.value.trim();
             const date = document.getElementById('perf-event-date')?.value;
-            const dur = parseInt(document.getElementById('perf-duration')?.value);
+            const hours = parseFloat(document.getElementById('perf-duration')?.value);
             const checked = document.querySelectorAll('.perf-member-cb:checked');
-            if (!name || !date || !dur || checked.length === 0) return showToast('請填寫完整資訊並勾選參與團員', true);
+            if (!name || !date || !hours || checked.length === 0) return showToast('請填寫完整資訊並勾選參與團員', true);
+            const durationMinutes = Math.round(hours * 60);
             const members = [...checked].map(cb => ({ email: cb.dataset.email, name: cb.dataset.name }));
             setBtnLoading(btn, true, '儲存中...');
-            const res = await callBackend('submitPerformance', { eventName: name, eventDate: date, durationMinutes: dur, members });
+            const res = await callBackend('submitPerformance', { eventName: name, eventDate: date, durationMinutes, members });
             setBtnLoading(btn, false, '儲存');
             if (res?.success) { showToast(`已登録 ${res.count} 位團員的表演時數`); closePerformanceModal(); loadPerformances(); }
             else showToast(res?.message || '儲存失敗', true);
@@ -3335,10 +3336,10 @@
                     </div>
                     <div>
                         <label
-                            class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">時長（分鐘）</label>
+                            class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">時長（小時）</label>
                         <input type="number" id="perf-duration"
                             class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none"
-                            placeholder="120">
+                            placeholder="2">
                     </div>
                 </div>
                 <div>
