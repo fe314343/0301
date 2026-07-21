@@ -1652,7 +1652,7 @@
                 const res = await callBackend('getRealtimeStatus', { section: currentUser.Section, role: currentUser.Role });
                 if (res && res.success) {
                     cachedMemberList = res.data || [];
-                    currentEventMeta = { start: res.eventStart, end: res.eventEnd, date: res.eventDate };
+                    currentEventMeta = { start: res.eventStart, end: res.eventEnd, date: res.eventDate, eventName: res.eventName };
                     const presentEl = document.getElementById('stat-present'), absentEl = document.getElementById('stat-absent');
                     if (presentEl) presentEl.innerText = res.stats?.present || 0;
                     if (absentEl) absentEl.innerText = res.stats?.absent || 0;
@@ -1666,6 +1666,27 @@
             if (count === 1) return 'text-amber-500';
             if (count === 2) return 'text-orange-500';
             return 'text-rose-500';
+        }
+
+        async function handleManualCheckin(email, name, section) {
+            if (!currentEventMeta || !currentEventMeta.date || !currentEventMeta.eventName) {
+                return showToast("無法取得活動資訊", true);
+            }
+            showToast(`正在為 ${name} 簽到...`);
+            const res = await callBackend('submitCheckin', {
+                email: email,
+                name: name,
+                section: section,
+                date: currentEventMeta.date,
+                eventName: currentEventMeta.eventName,
+                eventTimeRange: `${currentEventMeta.start} ~ ${currentEventMeta.end}`
+            });
+            if (res?.success) {
+                showToast(`${name} 已成功簽到`);
+                loadRealtimeStatus();
+            } else {
+                showToast(res?.message || "代簽失敗", true);
+            }
         }
 
         function applyMonitorFilters() {
@@ -1706,13 +1727,20 @@
                 });
             }
 
+            const canManualCheckin = currentUser.Role === 'Admin' || currentUser.Role === 'Officer' || currentUser.Role === 'Leader';
             if (listEl) listEl.innerHTML = list.map(m => {
                 const abs = m.absenceCount || 0;
                 const lv = m.leaveCount || 0;
                 let statusColor = 'text-rose-400';
                 if (m.status === '已簽到') statusColor = 'text-emerald-500';
                 else if (m.status === '請假') statusColor = 'text-amber-500';
-                return `<div class="bg-white/70 p-4 rounded-2xl flex justify-between items-center text-left"><div class="flex flex-col gap-1"><p class="font-black text-slate-800 text-xs">${m.Name} <span class="text-[9px] text-slate-400">(${m.Instrument})</span></p><div class="flex gap-2"><p class="text-[10px] font-black ${getAbsenceColorClass(abs)}">缺 ${abs}</p><p class="text-[10px] font-black text-amber-400">假 ${lv}</p></div></div><div class="text-right"><span class="text-xs font-black ${statusColor}">${m.status}</span></div></div>`
+
+                let checkinBtnHTML = '';
+                if (canManualCheckin && m.status !== '已簽到' && m.status !== '請假') {
+                    checkinBtnHTML = `<button onclick="handleManualCheckin('${m.Email}', '${m.Name}', '${m.Section}')" class="ml-2 text-[10px] bg-indigo-500 text-white px-2 py-1 rounded-md shadow-sm active:scale-95 transition-all flex items-center justify-center shrink-0 w-8"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>`;
+                }
+
+                return `<div class="bg-white/70 p-4 rounded-2xl flex justify-between items-center text-left"><div class="flex flex-col gap-1"><p class="font-black text-slate-800 text-xs">${m.Name} <span class="text-[9px] text-slate-400">(${m.Instrument})</span></p><div class="flex gap-2"><p class="text-[10px] font-black ${getAbsenceColorClass(abs)}">缺 ${abs}</p><p class="text-[10px] font-black text-amber-400">假 ${lv}</p></div></div><div class="text-right flex items-center justify-end"><span class="text-xs font-black ${statusColor}">${m.status}</span>${checkinBtnHTML}</div></div>`
             }).join('');
 
             renderMonitorSummary(list);

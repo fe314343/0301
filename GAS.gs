@@ -444,8 +444,12 @@ function getRealtimeStatus(userData) {
             const attDateRaw = attendance[i][5];
             const attDate = attDateRaw instanceof Date ? Utilities.formatDate(attDateRaw, "GMT+8", "yyyy-MM-dd") : String(attDateRaw || "");
 
-            // 紀錄活動總場次 (利用 日期+活動名 當作唯一值)
-            if (attDate && attEvent) uniqueEvents[attDate + "_" + attEvent] = true;
+            // 紀錄活動總場次與日期 (利用 日期+活動名 當作唯一值，並儲存日期做後續比對)
+            if (attDate && attEvent) {
+                if (!uniqueEvents[attDate + "_" + attEvent]) {
+                    uniqueEvents[attDate + "_" + attEvent] = attDate;
+                }
+            }
             if (!userStats[email]) userStats[email] = { presentCount: 0, leaveCount: 0, today: false, todayStatus: "尚未簽到", todayReason: "" };
             
             const attStatus = String(attendance[i][6] || ""); // 判斷是出席還是請假
@@ -473,6 +477,22 @@ function getRealtimeStatus(userData) {
         
         const data = filteredMembers.map(m => {
             const email = String(m[3] || "").toLowerCase().trim();
+            const joinDateRaw = m[7]; // 成員入團日期
+            let joinDateStr = "";
+            if (joinDateRaw) {
+                joinDateStr = joinDateRaw instanceof Date ? Utilities.formatDate(joinDateRaw, "GMT+8", "yyyy-MM-dd") : String(joinDateRaw).substring(0, 10);
+            }
+
+            let memberTotalEventsCount = 0;
+            if (joinDateStr) {
+                // 如果有入團日期，只算入團日（含）之後的活動
+                for (let key in uniqueEvents) {
+                    if (uniqueEvents[key] >= joinDateStr) memberTotalEventsCount++;
+                }
+            } else {
+                memberTotalEventsCount = totalEventsCount;
+            }
+
             const stats = userStats[email] || { presentCount: 0, leaveCount: 0, today: false, todayStatus: "尚未簽到" };
 
             let statusText = "尚未簽到";
@@ -495,8 +515,8 @@ function getRealtimeStatus(userData) {
                 // 系統已經關閉，但這個人沒簽到
                 statusText = "缺席";
             }
-            // 【真實缺席數】 = 樂團總共辦了幾場活動 - 出席總次數 - 請假總次數
-            let absenceCount = totalEventsCount - stats.presentCount - stats.leaveCount;
+            // 【真實缺席數】 = 該成員加入後樂團辦了幾場活動 - 出席總次數 - 請假總次數
+            let absenceCount = memberTotalEventsCount - stats.presentCount - stats.leaveCount;
             if (absenceCount < 0) absenceCount = 0;
             return {
                 Name: m[1], Section: m[2], Instrument: m[6], Email: email,
@@ -512,7 +532,8 @@ function getRealtimeStatus(userData) {
             success: true, data, stats, totalEvents: totalEventsCount,
             eventStart: formatTimeValue(config[3]), 
             eventEnd: formatTimeValue(config[4]), 
-            eventDate: currentEventDate
+            eventDate: currentEventDate,
+            eventName: currentEventName
         };
     } catch (e) { return { success: false, message: e.toString() }; }
 }
