@@ -469,9 +469,23 @@ function getRealtimeStatus(userData) {
             }
         }
 
-        // 計算樂團總共辦了幾場活動
-        const totalEventsCount = Object.keys(uniqueEvents).length;
-        
+        // ---------------------------------
+        // 計算系統時間與活動截止
+        // ---------------------------------
+        let endH = 0, endM = 0;
+        if (currentEventEndTime.includes('時')) {
+            const parts = currentEventEndTime.split('時');
+            endH = parseInt(parts[0]); endM = parseInt(parts[1]);
+        } else if (currentEventEndTime.includes(':')) {
+            const parts = currentEventEndTime.split(':');
+            endH = parseInt(parts[0]); endM = parseInt(parts[1]);
+        }
+        const endDateTime = new Date(currentEventDate);
+        endDateTime.setHours(endH, endM, 0);
+
+        const currentEventConcluded = isSystemOn && (now > endDateTime);
+        const todayStr = Utilities.formatDate(now, "GMT+8", "yyyy-MM-dd");
+
         // 過濾掉「行政組」，不讓他們出現在出缺席監控中
         const filteredMembers = members.slice(1).filter(m => String(m[2] || "").trim() !== "行政組");
         
@@ -484,13 +498,27 @@ function getRealtimeStatus(userData) {
             }
 
             let memberTotalEventsCount = 0;
-            if (joinDateStr) {
-                // 如果有入團日期，只算入團日（含）之後的活動
-                for (let key in uniqueEvents) {
-                    if (uniqueEvents[key] >= joinDateStr) memberTotalEventsCount++;
+            // 逐個檢查 uniqueEvents，只計算已經「過期/結束」的活動
+            for (let key in uniqueEvents) {
+                const evtDate = uniqueEvents[key];
+                const evtName = key.split('_')[1];
+
+                let isConcluded = false;
+                if (evtDate < todayStr) {
+                    isConcluded = true;
+                } else if (evtDate === todayStr) {
+                    if (isSystemOn && evtDate === currentEventDate && evtName === currentEventName) {
+                        isConcluded = currentEventConcluded;
+                    } else {
+                        isConcluded = true;
+                    }
+                } // 若 > todayStr (未來活動)，則為 false (完全不採計)
+
+                if (isConcluded) {
+                    if (!joinDateStr || evtDate >= joinDateStr) {
+                        memberTotalEventsCount++;
+                    }
                 }
-            } else {
-                memberTotalEventsCount = totalEventsCount;
             }
 
             const stats = userStats[email] || { presentCount: 0, leaveCount: 0, today: false, todayStatus: "尚未簽到" };
@@ -499,23 +527,13 @@ function getRealtimeStatus(userData) {
             if (stats.today) {
                 statusText = stats.todayStatus;
             } else if (isSystemOn) {
-                let endH = 0, endM = 0;
-                if (currentEventEndTime.includes('時')) {
-                    const parts = currentEventEndTime.split('時');
-                    endH = parseInt(parts[0]); endM = parseInt(parts[1]);
-                } else if (currentEventEndTime.includes(':')) {
-                    const parts = currentEventEndTime.split(':');
-                    endH = parseInt(parts[0]); endM = parseInt(parts[1]);
-                }
-                const endDateTime = new Date(currentEventDate);
-                endDateTime.setHours(endH, endM, 0);
                 // 如果系統開啟中但已經打鐘了
-                if (now > endDateTime) statusText = "缺席";
+                if (currentEventConcluded) statusText = "缺席";
             } else {
                 // 系統已經關閉，但這個人沒簽到
                 statusText = "缺席";
             }
-            // 【真實缺席數】 = 該成員加入後樂團辦了幾場活動 - 出席總次數 - 請假總次數
+            // 【真實缺席數】 = 該成員加入後且「已結束」的活動總數 - 出席總次數 - 請假總次數
             let absenceCount = memberTotalEventsCount - stats.presentCount - stats.leaveCount;
             if (absenceCount < 0) absenceCount = 0;
             return {
