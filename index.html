@@ -557,6 +557,39 @@
                     <div id="admin-survey-list" class="space-y-4"></div>
                 </div>
             </div>
+
+            <!-- 分頁6: 表演時數 -->
+            <div id="performance-section" class="hidden animate-in w-full space-y-6">
+                <div class="flex items-center justify-between px-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center text-rose-600">
+                            <i data-lucide="music" class="w-4 h-4"></i>
+                        </div>
+                        <h4 class="font-[900] text-slate-800 text-base tracking-tight">表演時數</h4>
+                    </div>
+                    <button id="btn-add-performance" onclick="openPerformanceModal()"
+                        class="hidden bg-rose-500 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-lg flex items-center gap-2 active:scale-95"><i
+                            data-lucide="plus" class="w-3.5 h-3.5"></i>新增表演</button>
+                </div>
+                <!-- 個人累積時數 -->
+                <div class="glass-panel p-6 rounded-[32px] border-white/60 w-full shadow-lg text-center">
+                    <div
+                        class="relative overflow-hidden bg-gradient-to-br from-rose-600 to-pink-700 p-8 rounded-[28px] text-white shadow-2xl flex flex-col items-center">
+                        <p class="text-[9px] opacity-50 font-black tracking-[0.3em] mb-2 uppercase">Total Performance
+                        </p>
+                        <div class="flex items-baseline gap-2 justify-center">
+                            <h3 id="perf-total-hours" class="text-5xl font-[900] tracking-tighter leading-none">0</h3>
+                            <div class="flex flex-col items-start leading-none">
+                                <span class="text-xs font-bold opacity-60 uppercase tracking-widest">Hours</span>
+                                <span id="perf-total-min-label"
+                                    class="text-[10px] font-black text-rose-200 mt-1 opacity-80"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 表演紀錄列表 -->
+                <div id="performance-list" class="space-y-3"></div>
+            </div>
         </section>
     </main>
 
@@ -579,6 +612,9 @@
             <button onclick="switchTab('surveys')" id="btn-surveys"
                 class="hidden flex-1 py-3 text-[9px] font-black rounded-[22px] transition-all tab-btn text-slate-400 flex flex-col items-center justify-center"><i
                     data-lucide="files" class="w-5 h-5 mb-1"></i>問卷庫</button>
+            <button onclick="switchTab('performance')" id="btn-performance"
+                class="flex-1 py-3 text-[9px] font-black rounded-[22px] transition-all tab-btn text-slate-400 flex flex-col items-center justify-center"><i
+                    data-lucide="music" class="w-5 h-5 mb-1"></i>表演</button>
         </div>
     </nav>
 
@@ -899,11 +935,12 @@
             document.querySelectorAll('#tab-nav .tab-btn').forEach(b => { b.classList.remove('tab-active', 'text-indigo-400'); b.classList.add('text-slate-400'); });
             const b = document.getElementById(`btn-${t}`);
             if (b) { b.classList.add('tab-active', 'text-indigo-400'); b.classList.remove('text-slate-400'); }
-            ['home', 'history', 'monitor', 'broadcast', 'surveys'].forEach(s => { const el = document.getElementById(`${s}-section`); if (el) el.classList.toggle('hidden', s !== t); });
+            ['home', 'history', 'monitor', 'broadcast', 'surveys', 'performance'].forEach(s => { const el = document.getElementById(`${s}-section`); if (el) el.classList.toggle('hidden', s !== t); });
             if (t === 'home') { fetchAnnouncement(); fetchSurveyStatus(); }
             if (t === 'monitor') loadRealtimeStatus();
             if (t === 'broadcast') { loadEventList(); loadStaffList(); }
             if (t === 'surveys') loadSurveyList();
+            if (t === 'performance') loadPerformances();
             safeCreateIcons();
         }
 
@@ -969,6 +1006,9 @@
             if (btnMonitor) btnMonitor.classList.toggle('hidden', !isLeader && !isAdmin);
             if (btnBroadcast) btnBroadcast.classList.toggle('hidden', !isAdmin);
             if (btnSurveys) btnSurveys.classList.toggle('hidden', !isAdmin && !isLeader);
+            // 表演新增按鈕只有 Admin/Officer 可見
+            const btnAddPerf = document.getElementById('btn-add-performance');
+            if (btnAddPerf) btnAddPerf.classList.toggle('hidden', !isAdmin);
 
             const btnCreateSurvey = document.getElementById('btn-create-survey');
             if (btnCreateSurvey) btnCreateSurvey.classList.toggle('hidden', !isActuallyAdmin);
@@ -995,6 +1035,84 @@
                 else { filterEl.disabled = false; }
             }
             safeCreateIcons();
+        }
+
+        // ====== 表演時數功能 ======
+        let cachedAllMembersForPerf = [];
+        async function loadPerformances() {
+            const listEl = document.getElementById('performance-list');
+            const hoursEl = document.getElementById('perf-total-hours');
+            const minLabel = document.getElementById('perf-total-min-label');
+            if (listEl) listEl.innerHTML = '<div class="py-10 text-[10px] font-black uppercase text-center text-slate-400">資料載入中...</div>';
+            const res = await callBackend('getPerformances', { email: currentUser.Email, role: currentUser.Role });
+            if (!res?.success) { if (listEl) listEl.innerHTML = '<div class="py-10 text-rose-400 text-center text-xs">載入失敗</div>'; return; }
+            const totalMin = res.totalMinutes || 0;
+            if (hoursEl) hoursEl.innerText = Math.floor(totalMin / 60);
+            if (minLabel) minLabel.innerText = (totalMin % 60) > 0 ? `${totalMin % 60}分` : '';
+            if (!res.data || res.data.length === 0) {
+                if (listEl) listEl.innerHTML = '<div class="py-10 text-slate-400 text-center text-xs">暫無表演記錄</div>';
+                return;
+            }
+            if (listEl) listEl.innerHTML = res.data.map(p => {
+                const h = Math.floor(p.durationMinutes / 60), m = p.durationMinutes % 60;
+                const durStr = h > 0 ? `${h}時${m > 0 ? m + '分' : ''}` : `${m}分`;
+                const isAdmin = currentUser.Role === 'Admin' || currentUser.Role === 'Officer';
+                const membersHtml = (isAdmin && p.members && p.members.length > 0) ? `<div class="flex flex-wrap gap-1 mt-2">${p.members.map(mem => `<span class="text-[9px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-bold">${mem.name}</span>`).join('')}</div>` : '';
+                return `<div class="bg-white/70 p-4 rounded-2xl text-left"><div class="flex justify-between items-start"><div><p class="font-black text-slate-800 text-sm">${p.eventName}</p><p class="text-[10px] text-slate-400 font-bold mt-0.5">${p.eventDate}</p>${membersHtml}</div><span class="text-sm font-black text-rose-500 shrink-0 ml-2">${durStr}</span></div></div>`;
+            }).join('');
+            safeCreateIcons();
+        }
+
+        function openPerformanceModal() {
+            const modal = document.getElementById('performance-modal');
+            if (!modal) return;
+            document.getElementById('perf-event-name').value = '';
+            document.getElementById('perf-event-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('perf-duration').value = '';
+            const container = document.getElementById('perf-member-checkboxes');
+            if (container) container.innerHTML = '<div class="text-xs text-slate-400">團員載入中...</div>';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            loadMembersForPerf();
+        }
+
+        function closePerformanceModal() {
+            const modal = document.getElementById('performance-modal');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        }
+
+        async function loadMembersForPerf() {
+            if (cachedAllMembersForPerf.length === 0) {
+                const res = await callBackend('getRealtimeStatus', { section: currentUser.Section, role: currentUser.Role });
+                if (res?.success) cachedAllMembersForPerf = res.data || [];
+            }
+            const container = document.getElementById('perf-member-checkboxes');
+            if (!container) return;
+            // Also allow admin & officer to appear in list from Members sheet
+            const adminRes = await callBackend('getStaffList', {});
+            const staffList = adminRes?.success ? adminRes.data : [];
+            const allPeople = [...cachedAllMembersForPerf, ...staffList];
+            container.innerHTML = allPeople.map(m =>
+                `<label class="flex items-center gap-2 p-2 rounded-xl hover:bg-rose-50 cursor-pointer">
+                    <input type="checkbox" class="perf-member-cb accent-rose-500 w-4 h-4" data-email="${m.Email}" data-name="${m.Name}">
+                    <span class="text-xs font-bold text-slate-700">${m.Name}</span><span class="text-[9px] text-slate-400">${m.Section}</span>
+                </label>`
+            ).join('');
+        }
+
+        async function submitPerformanceForm() {
+            const btn = document.getElementById('perf-submit-btn');
+            const name = document.getElementById('perf-event-name')?.value.trim();
+            const date = document.getElementById('perf-event-date')?.value;
+            const dur = parseInt(document.getElementById('perf-duration')?.value);
+            const checked = document.querySelectorAll('.perf-member-cb:checked');
+            if (!name || !date || !dur || checked.length === 0) return showToast('請填寫完整資訊並勾選參與團員', true);
+            const members = [...checked].map(cb => ({ email: cb.dataset.email, name: cb.dataset.name }));
+            setBtnLoading(btn, true, '儲存中...');
+            const res = await callBackend('submitPerformance', { eventName: name, eventDate: date, durationMinutes: dur, members });
+            setBtnLoading(btn, false, '儲存');
+            if (res?.success) { showToast(`已登録 ${res.count} 位團員的表演時數`); closePerformanceModal(); loadPerformances(); }
+            else showToast(res?.message || '儲存失敗', true);
         }
 
         function openProfileModal() {
@@ -3189,6 +3307,55 @@
         </div>
     </div>
 
+
+    <!-- 表演時數 Modal (Admin/Officer) -->
+    <div id="performance-modal"
+        class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10100] items-center justify-center p-4">
+        <div
+            class="glass-panel w-full max-w-sm rounded-[32px] p-6 shadow-2xl border-white/60 text-center animate-in max-h-[90vh] flex flex-col">
+            <div
+                class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-500 shadow-inner shrink-0">
+                <i data-lucide="music" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-[900] text-slate-800 tracking-tight mb-4 shrink-0">新增表演紀錄</h3>
+            <div class="space-y-3 mb-4 text-left overflow-y-auto flex-1 pr-1">
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">表演名稱</label>
+                    <input type="text" id="perf-event-name"
+                        class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none"
+                        placeholder="例：崇正文化藝術季">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">表演日期</label>
+                        <input type="date" id="perf-event-date"
+                            class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">時長（分鐘）</label>
+                        <input type="number" id="perf-duration"
+                            class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none"
+                            placeholder="120">
+                    </div>
+                </div>
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">參與團員（可多選）</label>
+                    <div id="perf-member-checkboxes"
+                        class="bg-slate-100 rounded-2xl p-3 space-y-1 max-h-52 overflow-y-auto"></div>
+                </div>
+            </div>
+            <div class="flex gap-4 shrink-0">
+                <button onclick="closePerformanceModal()"
+                    class="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm active:scale-95 transition-all">取消</button>
+                <button id="perf-submit-btn" onclick="submitPerformanceForm()"
+                    class="flex-1 py-3.5 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">儲存</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast 通知 -->
     <div id="toast"

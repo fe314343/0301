@@ -36,6 +36,8 @@ function doPost(e) {
             case 'getStaffList': result = getStaffList(); break;
             case 'getUpcomingEvents': result = getUpcomingEvents(); break;
             case 'submitLeave': result = submitLeave(data); break;
+            case 'submitPerformance': result = submitPerformance(data); break;
+            case 'getPerformances': result = getPerformances(data); break;
             default: result = { success: false, message: "未知指令" };
         }
     } catch (err) {
@@ -988,7 +990,7 @@ function formatTimeValue(v) {
 }
 
 function checkAndInitSheets() {
-    const sheets = ["Members", "Attendance", "Events", "SystemConfig", "Announcements", "SurveyTemplates", "SurveyResponses"];
+    const sheets = ["Members", "Attendance", "Events", "SystemConfig", "Announcements", "SurveyTemplates", "SurveyResponses", "PerformanceRecords"];
     sheets.forEach(n => { if (!SS.getSheetByName(n)) SS.insertSheet(n); });
     const sysS = SS.getSheetByName("SystemConfig");
     if (sysS.getLastRow() === 0) {
@@ -1002,6 +1004,75 @@ function sendSummaryNotification(data) {
         const title = `崇正國樂團：${data.type}名單彙整`;
         const body = data.content;
         return sendBroadcastNotification(title, body);
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+
+// ==========================================
+// D. 表演時數功能 (Performance Records)
+// ==========================================
+
+function submitPerformance(data) {
+    try {
+        const sheet = SS.getSheetByName("PerformanceRecords");
+        if (!sheet) return { success: false, message: "找不到 PerformanceRecords 工作表" };
+
+        const eventName = String(data.eventName || "").trim();
+        const eventDate = String(data.eventDate || "").trim();
+        const durationMinutes = parseInt(data.durationMinutes) || 0;
+        const members = data.members || []; // [{ name, email }]
+
+        if (!eventName || !eventDate || !durationMinutes || members.length === 0) {
+            return { success: false, message: "請填寫完整的表演資訊與參與人員" };
+        }
+
+        const timestamp = new Date();
+        members.forEach(m => {
+            sheet.appendRow([timestamp, eventName, eventDate, durationMinutes, String(m.email).toLowerCase().trim(), m.name]);
+        });
+
+        return { success: true, count: members.length };
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+
+function getPerformances(data) {
+    try {
+        const sheet = SS.getSheetByName("PerformanceRecords");
+        if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [], totalMinutes: 0 };
+
+        const rows = sheet.getDataRange().getValues().slice(1);
+        const requestEmail = String(data.email || "").toLowerCase().trim();
+        const role = String(data.role || "");
+        const isAdmin = role === 'Admin' || role === 'Officer';
+
+        // 一律依 Date+EventName 聚合，避免同一場表演的多筆資料各自顯示
+        const eventMap = {};
+        rows.forEach(r => {
+            const rowEmail = String(r[4] || "").toLowerCase().trim();
+            if (!isAdmin && rowEmail !== requestEmail) return; // 非管理員只看自己的
+            const dateRaw = r[2];
+            const dateStr = dateRaw instanceof Date ? Utilities.formatDate(dateRaw, "GMT+8", "yyyy-MM-dd") : String(dateRaw || "");
+            const key = dateStr + "_" + String(r[1]);
+            if (!eventMap[key]) {
+                eventMap[key] = { eventName: r[1], eventDate: dateStr, durationMinutes: parseInt(r[3]) || 0, members: [] };
+            }
+            if (isAdmin) eventMap[key].members.push({ name: r[5], email: r[4] });
+        });
+
+        const results = Object.values(eventMap).sort((a, b) => b.eventDate.localeCompare(a.eventDate));
+
+        // 計算個人總時數
+        let personalMinutes = 0;
+        rows.forEach(r => {
+            if (String(r[4] || "").toLowerCase().trim() === requestEmail) {
+                personalMinutes += parseInt(r[3]) || 0;
+            }
+        });
+
+        return { success: true, data: results, totalMinutes: personalMinutes };
     } catch (e) {
         return { success: false, message: e.toString() };
     }
