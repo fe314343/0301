@@ -486,6 +486,9 @@ function getRealtimeStatus(userData) {
         const currentEventConcluded = isSystemOn && (now > endDateTime);
         const todayStr = Utilities.formatDate(now, "GMT+8", "yyyy-MM-dd");
 
+        // 重新加上被誤刪的活動總數計算
+        const totalEventsCount = Object.keys(uniqueEvents).length;
+
         // 過濾掉「行政組」，不讓他們出現在出缺席監控中
         const filteredMembers = members.slice(1).filter(m => String(m[2] || "").trim() !== "行政組");
         
