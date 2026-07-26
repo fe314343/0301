@@ -2600,13 +2600,12 @@
             listEl.innerHTML = '<div class="py-8 text-xs font-bold text-slate-400 text-center">正在同步組別成員名單...</div>';
 
             try {
-                let members = cachedMemberList || [];
-                if (members.length === 0) {
-                    const res = await callBackend('getRealtimeStatus', { email: currentUser.Email });
-                    if (res?.success && res.data) {
-                        members = res.data;
-                        cachedMemberList = res.data;
-                    }
+                let members = [];
+                const res = await callBackend('getMemberListForDelegation', {});
+                if (res?.success && res.data && res.data.length > 0) {
+                    members = res.data;
+                } else if (cachedMemberList && cachedMemberList.length > 0) {
+                    members = cachedMemberList;
                 }
 
                 // 權限隔離：Leader 只能看到並代填自己 Section 的成員

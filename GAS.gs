@@ -29,6 +29,7 @@ function doPost(e) {
             case 'getSurveyStatus': result = getSurveyStatus(data); break;
             case 'submitSurveyResponse': result = submitSurveyResponse(data); break;
             case 'submitSurveyResponseBatch': result = submitSurveyResponseBatch(data); break;
+            case 'getMemberListForDelegation': result = getMemberListForDelegation(); break;
             case 'getSurveyResults': result = getSurveyResults(data); break;
             case 'saveSystemSetting': result = saveSystemSetting(data); break;
             case 'deactivateEvent': result = deactivateEvent(); break;
@@ -665,6 +666,27 @@ function getStaffList() {
         return { success: true, data: staffs };
     } catch (e) { 
         return { success: false, message: e.toString() }; 
+    }
+}
+
+function getMemberListForDelegation() {
+    try {
+        const memS = SS.getSheetByName("Members");
+        if (!memS) return { success: false, message: "找不到 Members 工作表" };
+        const members = memS.getDataRange().getValues();
+        if (members.length <= 1) return { success: true, data: [] };
+        
+        const list = members.slice(1).map(m => ({
+            Name: String(m[1] || "").trim(),
+            Section: String(m[2] || "").trim(),
+            Email: String(m[3] || "").toLowerCase().trim(),
+            Role: String(m[5] || "").trim(),
+            Instrument: String(m[6] || "").trim()
+        })).filter(m => m.Name !== "");
+        
+        return { success: true, data: list };
+    } catch (e) {
+        return { success: false, message: e.toString() };
     }
 }
 
