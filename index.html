@@ -2658,12 +2658,17 @@
                         <div class="batch-q-fields space-y-3">
                             ${questions.map((q) => {
                         const qLabel = q.label;
-                        const options = q.options || [];
-                        if (q.type === 'select' || q.type === 'radio' || options.length > 0) {
+                        // q.options 可能是逗號分隔字串 ("是,否") 或陣列，統一轉換成陣列
+                        const rawOpts = q.options || '';
+                        const options = Array.isArray(rawOpts)
+                            ? rawOpts.map(o => String(o).trim()).filter(Boolean)
+                            : String(rawOpts).split(',').map(o => o.trim()).filter(Boolean);
+                        if (q.type === 'select' || q.type === 'radio' || q.type === 'yesno' || options.length > 0) {
                             return `
                                     <div class="space-y-1">
                                         <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
                                         <select class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}">
+                                            <option value="">請選擇...</option>
                                             ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
                                         </select>
                                     </div>`;
