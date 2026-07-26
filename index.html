@@ -2599,66 +2599,105 @@
 
             listEl.innerHTML = '<div class="py-8 text-xs font-bold text-slate-400 text-center">正在同步組別成員名單...</div>';
 
+            let members = [];
+
+            // 嘗試 1: 專用名單 API (getMemberListForDelegation)
             try {
-                let members = [];
                 const res = await callBackend('getMemberListForDelegation', {});
-                if (res?.success && res.data && res.data.length > 0) {
+                if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
                     members = res.data;
-                } else if (cachedMemberList && cachedMemberList.length > 0) {
-                    members = cachedMemberList;
                 }
-
-                // 權限隔離：Leader 只能看到並代填自己 Section 的成員
-                if (isLeader && section) {
-                    members = members.filter(m => String(m.Section || '').trim() === section);
-                }
-
-                if (members.length === 0) {
-                    listEl.innerHTML = '<div class="py-8 text-xs font-bold text-slate-400 text-center">無可代填之成員資料</div>';
-                    return;
-                }
-
-                const questions = surveyQuestions || [];
-
-                listEl.innerHTML = members.map((m) => {
-                    const sec = m.Section || '未分類';
-                    return `
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-left space-y-3 batch-member-card" data-name="${m.Name}" data-section="${sec}" data-email="${m.Email || ''}">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="batch-select-chk w-4 h-4 accent-indigo-600 rounded" checked onchange="toggleBatchMemberCard(this)">
-                                <span class="font-black text-slate-800 text-xs">${m.Name}</span>
-                            </label>
-                            <span class="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${sec}</span>
-                        </div>
-                        <div class="batch-q-fields space-y-3">
-                            ${questions.map((q) => {
-                        const qLabel = q.label;
-                        const options = q.options || [];
-                        if (q.type === 'select' || q.type === 'radio' || options.length > 0) {
-                            return `
-                                    <div class="space-y-1">
-                                        <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
-                                        <select class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}">
-                                            ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                                        </select>
-                                    </div>`;
-                        } else {
-                            return `
-                                    <div class="space-y-1">
-                                        <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
-                                        <input type="text" class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}" placeholder="請填寫 ${qLabel}">
-                                    </div>`;
-                        }
-                    }).join('')}
-                        </div>
-                    </div>`;
-                }).join('');
-
             } catch (e) {
-                console.error("loadBatchSurveyMembers Error:", e);
-                listEl.innerHTML = '<div class="py-8 text-xs font-bold text-rose-500 text-center">載入成員名單失敗</div>';
+                console.warn("getMemberListForDelegation failed:", e);
             }
+
+            // 嘗試 2: 出缺席監控名單 API (getRealtimeStatus)
+            if (members.length === 0) {
+                try {
+                    const res = await callBackend('getRealtimeStatus', { email: currentUser?.Email || "" });
+                    if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+                        members = res.data;
+                    }
+                } catch (e) {
+                    console.warn("getRealtimeStatus fallback failed:", e);
+                }
+            }
+
+            // 嘗試 3: 行政人員名單 API (getStaffList)
+            if (members.length === 0) {
+                try {
+                    const res = await callBackend('getStaffList', {});
+                    if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+                        members = res.data;
+                    }
+                } catch (e) {
+                    console.warn("getStaffList fallback failed:", e);
+                }
+            }
+
+            // 嘗試 4: 快取資料 Fallback
+            if (members.length === 0 && Array.isArray(window.cachedMemberList) && window.cachedMemberList.length > 0) {
+                members = window.cachedMemberList;
+            }
+            if (members.length === 0 && Array.isArray(window.allStaffData) && window.allStaffData.length > 0) {
+                members = window.allStaffData;
+            }
+
+            // 權限隔離：Leader 只能看到並代填自己 Section 的成員
+            if (isLeader && section) {
+                const secFiltered = members.filter(m => String(m.Section || m.section || '').trim() === section);
+                if (secFiltered.length > 0) {
+                    members = secFiltered;
+                }
+            }
+
+            if (members.length === 0) {
+                listEl.innerHTML = '<div class="py-8 text-xs font-bold text-slate-400 text-center">無可代填之成員資料或尚無同組成員</div>';
+                return;
+            }
+
+            // 快取資料供後續使用
+            window.cachedMemberList = members;
+
+            const questions = surveyQuestions || [];
+
+            listEl.innerHTML = members.map((m) => {
+                const name = m.Name || m.name || '';
+                const sec = m.Section || m.section || '未分類';
+                const email = m.Email || m.email || '';
+                if (!name) return '';
+                return `
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-left space-y-3 batch-member-card" data-name="${name}" data-section="${sec}" data-email="${email}">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="batch-select-chk w-4 h-4 accent-indigo-600 rounded" checked onchange="toggleBatchMemberCard(this)">
+                            <span class="font-black text-slate-800 text-xs">${name}</span>
+                        </label>
+                        <span class="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${sec}</span>
+                    </div>
+                    <div class="batch-q-fields space-y-3">
+                        ${questions.map((q) => {
+                    const qLabel = q.label;
+                    const options = q.options || [];
+                    if (q.type === 'select' || q.type === 'radio' || options.length > 0) {
+                        return `
+                                <div class="space-y-1">
+                                    <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
+                                    <select class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}">
+                                        ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                    </select>
+                                </div>`;
+                    } else {
+                        return `
+                                <div class="space-y-1">
+                                    <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
+                                    <input type="text" class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}" placeholder="請填寫 ${qLabel}">
+                                </div>`;
+                    }
+                }).join('')}
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         function toggleBatchMemberCard(chk) {
