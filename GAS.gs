@@ -28,6 +28,7 @@ function doPost(e) {
             case 'saveSurveyConfig': result = saveSurveyConfig(data); break;
             case 'getSurveyStatus': result = getSurveyStatus(data); break;
             case 'submitSurveyResponse': result = submitSurveyResponse(data); break;
+            case 'submitSurveyResponseBatch': result = submitSurveyResponseBatch(data); break;
             case 'getSurveyResults': result = getSurveyResults(data); break;
             case 'saveSystemSetting': result = saveSystemSetting(data); break;
             case 'deactivateEvent': result = deactivateEvent(); break;
@@ -314,6 +315,88 @@ function submitSurveyResponse(data) {
         if (master) master.appendRow([new Date(), userEmail, userName, activeSurId, data.responsesJSON]);
         return { success: true };
     } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function submitSurveyResponseBatch(data) {
+    try {
+        const callerRole = String(data.role || "");
+        const callerSection = String(data.section || "").trim();
+        const isAdmin = callerRole === 'Admin' || callerRole === 'Officer';
+        const isLeader = callerRole === 'Leader';
+
+        if (!isAdmin && !isLeader) {
+            return { success: false, message: "無權限執行批次劃記" };
+        }
+
+        const activeSurId = data.surveyId || SS.getSheetByName("SystemConfig").getRange(2, 12).getValue();
+        if (!activeSurId) return { success: false, message: "無指定或啟動中問卷" };
+
+        const templates = SS.getSheetByName("SurveyTemplates").getDataRange().getValues();
+        const templateRow = templates.find(r => String(r[0]) === String(activeSurId));
+        if (!templateRow) return { success: false, message: "找不到問卷定義" };
+        const questions = JSON.parse(templateRow[3] || "[]");
+
+        const surveySheet = getOrCreateSurveySheet(activeSurId, templateRow[1], questions);
+        const headers = surveySheet.getRange(1, 1, 1, surveySheet.getLastColumn()).getValues()[0];
+
+        const batchList = data.batchData || [];
+        if (batchList.length === 0) return { success: false, message: "請選擇要劃記的成員" };
+
+        let successCount = 0;
+        const master = SS.getSheetByName("SurveyResponses");
+
+        batchList.forEach(item => {
+            const memberSection = String(item.section || "").trim();
+            // 權限隔離校驗：Leader 只能劃記自己 Section 的人員
+            if (isLeader && memberSection !== callerSection) {
+                return; // 跳過非本組成員
+            }
+
+            const targetName = String(item.name || "").trim();
+            const memberEmail = String(item.email || "").toLowerCase().trim();
+            const responses = typeof item.responses === 'object' ? item.responses : JSON.parse(item.responsesJSON || "{}");
+
+            const rowData = new Array(headers.length).fill("");
+            rowData[0] = new Date();
+            rowData[1] = memberEmail || `${targetName}@delegated.local`;
+            rowData[2] = targetName;
+            rowData[3] = memberSection || callerSection;
+
+            for (let i = 4; i < headers.length; i++) {
+                const label = headers[i];
+                if (responses.hasOwnProperty(label)) rowData[i] = responses[label];
+            }
+
+            // 尋找是否已有該成員的寫入紀錄（以 Name + Section 為 Key）
+            const sheetVals = surveySheet.getDataRange().getValues();
+            let rowIdx = -1;
+            for (let i = 1; i < sheetVals.length; i++) {
+                const rowName = String(sheetVals[i][2]).trim();
+                const rowSec = String(sheetVals[i][3]).trim();
+                if (rowName === targetName && (rowSec === memberSection || !memberSection)) {
+                    rowIdx = i + 1;
+                    break;
+                }
+            }
+
+            const formattedRow = rowData.map(v => v instanceof Date ? Utilities.formatDate(v, "GMT+8", "yyyy-MM-dd HH:mm:ss") : String(v));
+            if (rowIdx !== -1) {
+                surveySheet.getRange(rowIdx, 1, 1, rowData.length).setNumberFormat('@').setValues([formattedRow]);
+            } else {
+                const newRow = surveySheet.getLastRow() + 1;
+                const range = surveySheet.getRange(newRow, 1, 1, rowData.length);
+                range.setNumberFormat('@');
+                range.setValues([formattedRow]);
+            }
+
+            if (master) master.appendRow([new Date(), memberEmail, targetName, activeSurId, JSON.stringify(responses)]);
+            successCount++;
+        });
+
+        return { success: true, count: successCount };
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
 }
 function getOrCreateSurveySheet(surveyId, title, questions) {
     const sheetName = "SRV_" + surveyId;
