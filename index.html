@@ -2584,6 +2584,14 @@
             }
         }
 
+        // 帶 Timeout 的 callBackend 封裝
+        function callBackendWithTimeout(action, data, timeoutMs = 2500) {
+            return Promise.race([
+                callBackend(action, data),
+                new Promise((resolve) => setTimeout(() => resolve({ success: false, timeout: true }), timeoutMs))
+            ]);
+        }
+
         async function loadBatchSurveyMembers() {
             const listEl = document.getElementById('survey-batch-member-list');
             const badge = document.getElementById('batch-section-badge');
@@ -2597,107 +2605,115 @@
                 badge.innerText = isLeader ? `權限管轄：${section || '所屬組別'}` : '權限管轄：全團/所有組別';
             }
 
-            listEl.innerHTML = '<div class="py-8 text-xs font-bold text-slate-400 text-center">正在同步組別成員名單...</div>';
-
+            // 收集前端本機已有之所有快取資料源，進行即時渲染
             let members = [];
+            const localSources = [
+                window.cachedMemberList,
+                window.allStaffData,
+                window.cachedAllMembersForPerf,
+                cachedMemberList
+            ];
 
-            // 嘗試 1: 專用名單 API (getMemberListForDelegation)
+            for (const src of localSources) {
+                if (Array.isArray(src) && src.length > 0) {
+                    members = src;
+                    break;
+                }
+            }
+
+            // 輔助函式：根據權限過濾與渲染成員列表
+            const renderList = (rawMembers) => {
+                let displayMembers = rawMembers || [];
+                if (isLeader && section) {
+                    const secFiltered = displayMembers.filter(m => String(m.Section || m.section || '').trim() === section);
+                    if (secFiltered.length > 0) displayMembers = secFiltered;
+                }
+
+                if (displayMembers.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="py-8 text-center space-y-3">
+                            <div class="text-xs font-bold text-slate-400">目前尚無可顯示之組別成員資料</div>
+                            <button onclick="loadBatchSurveyMembers()" class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black hover:bg-indigo-100 transition-all">
+                                🔄 重新同步名單
+                            </button>
+                        </div>`;
+                    return false;
+                }
+
+                const questions = surveyQuestions || [];
+                listEl.innerHTML = displayMembers.map((m) => {
+                    const name = m.Name || m.name || '';
+                    const sec = m.Section || m.section || '未分類';
+                    const email = m.Email || m.email || '';
+                    if (!name) return '';
+                    return `
+                    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-left space-y-3 batch-member-card" data-name="${name}" data-section="${sec}" data-email="${email}">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" class="batch-select-chk w-4 h-4 accent-indigo-600 rounded" checked onchange="toggleBatchMemberCard(this)">
+                                <span class="font-black text-slate-800 text-xs">${name}</span>
+                            </label>
+                            <span class="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${sec}</span>
+                        </div>
+                        <div class="batch-q-fields space-y-3">
+                            ${questions.map((q) => {
+                        const qLabel = q.label;
+                        const options = q.options || [];
+                        if (q.type === 'select' || q.type === 'radio' || options.length > 0) {
+                            return `
+                                    <div class="space-y-1">
+                                        <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
+                                        <select class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}">
+                                            ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                        </select>
+                                    </div>`;
+                        } else {
+                            return `
+                                    <div class="space-y-1">
+                                        <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
+                                        <input type="text" class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}" placeholder="請填寫 ${qLabel}">
+                                    </div>`;
+                        }
+                    }).join('')}
+                        </div>
+                    </div>`;
+                }).join('');
+                return true;
+            };
+
+            // 1. 若本機已有資料，先立即渲染，達到 0 毫秒秒開體驗！
+            let renderedImmediately = false;
+            if (members.length > 0) {
+                renderedImmediately = renderList(members);
+            }
+
+            // 若本機無資料，先顯示讀取中動畫
+            if (!renderedImmediately) {
+                listEl.innerHTML = '<div class="py-8 text-xs font-bold text-slate-400 text-center">正在同步組別成員名單...</div>';
+            }
+
+            // 2. 後台背景非同步更新最全面名單 (帶 2.5 秒逾時防護)
             try {
-                const res = await callBackend('getMemberListForDelegation', {});
+                let res = await callBackendWithTimeout('getMemberListForDelegation', {}, 2500);
+                if (!res?.success || !Array.isArray(res.data) || res.data.length === 0) {
+                    res = await callBackendWithTimeout('getStaffList', {}, 2000);
+                }
+                if (!res?.success || !Array.isArray(res.data) || res.data.length > 0) {
+                    res = await callBackendWithTimeout('getRealtimeStatus', { email: currentUser?.Email || "" }, 2000);
+                }
+
                 if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-                    members = res.data;
+                    window.cachedMemberList = res.data;
+                    renderList(res.data);
+                } else if (!renderedImmediately) {
+                    renderList(members);
                 }
             } catch (e) {
-                console.warn("getMemberListForDelegation failed:", e);
-            }
-
-            // 嘗試 2: 出缺席監控名單 API (getRealtimeStatus)
-            if (members.length === 0) {
-                try {
-                    const res = await callBackend('getRealtimeStatus', { email: currentUser?.Email || "" });
-                    if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-                        members = res.data;
-                    }
-                } catch (e) {
-                    console.warn("getRealtimeStatus fallback failed:", e);
+                console.warn("Background member sync error:", e);
+                if (!renderedImmediately) {
+                    renderList(members);
                 }
             }
-
-            // 嘗試 3: 行政人員名單 API (getStaffList)
-            if (members.length === 0) {
-                try {
-                    const res = await callBackend('getStaffList', {});
-                    if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-                        members = res.data;
-                    }
-                } catch (e) {
-                    console.warn("getStaffList fallback failed:", e);
-                }
-            }
-
-            // 嘗試 4: 快取資料 Fallback
-            if (members.length === 0 && Array.isArray(window.cachedMemberList) && window.cachedMemberList.length > 0) {
-                members = window.cachedMemberList;
-            }
-            if (members.length === 0 && Array.isArray(window.allStaffData) && window.allStaffData.length > 0) {
-                members = window.allStaffData;
-            }
-
-            // 權限隔離：Leader 只能看到並代填自己 Section 的成員
-            if (isLeader && section) {
-                const secFiltered = members.filter(m => String(m.Section || m.section || '').trim() === section);
-                if (secFiltered.length > 0) {
-                    members = secFiltered;
-                }
-            }
-
-            if (members.length === 0) {
-                listEl.innerHTML = '<div class="py-8 text-xs font-bold text-slate-400 text-center">無可代填之成員資料或尚無同組成員</div>';
-                return;
-            }
-
-            // 快取資料供後續使用
-            window.cachedMemberList = members;
-
-            const questions = surveyQuestions || [];
-
-            listEl.innerHTML = members.map((m) => {
-                const name = m.Name || m.name || '';
-                const sec = m.Section || m.section || '未分類';
-                const email = m.Email || m.email || '';
-                if (!name) return '';
-                return `
-                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-left space-y-3 batch-member-card" data-name="${name}" data-section="${sec}" data-email="${email}">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" class="batch-select-chk w-4 h-4 accent-indigo-600 rounded" checked onchange="toggleBatchMemberCard(this)">
-                            <span class="font-black text-slate-800 text-xs">${name}</span>
-                        </label>
-                        <span class="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">${sec}</span>
-                    </div>
-                    <div class="batch-q-fields space-y-3">
-                        ${questions.map((q) => {
-                    const qLabel = q.label;
-                    const options = q.options || [];
-                    if (q.type === 'select' || q.type === 'radio' || options.length > 0) {
-                        return `
-                                <div class="space-y-1">
-                                    <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
-                                    <select class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}">
-                                        ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                                    </select>
-                                </div>`;
-                    } else {
-                        return `
-                                <div class="space-y-1">
-                                    <label class="text-[9px] font-black text-slate-400 uppercase">${qLabel}</label>
-                                    <input type="text" class="batch-ans-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none" data-qlabel="${qLabel}" placeholder="請填寫 ${qLabel}">
-                                </div>`;
-                    }
-                }).join('')}
-                    </div>
-                </div>`;
-            }).join('');
         }
 
         function toggleBatchMemberCard(chk) {
