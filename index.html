@@ -2228,6 +2228,7 @@
             safeCreateIcons();
         }
 
+        let currentSurveyId = '';
         async function fetchSurveyStatus() {
             if (!currentUser) return;
             const res = await callBackend('getSurveyStatus', { email: currentUser.Email });
@@ -2237,6 +2238,7 @@
                 document.getElementById('survey-display-title').innerText = res.title;
                 document.getElementById('survey-display-desc').innerText = res.description || "";
                 currentEmbedURL = res.embedURL || "";
+                currentSurveyId = res.surveyId || '';
                 const badge = document.getElementById('survey-status-badge');
                 if (badge) {
                     if (res.responded) { badge.innerText = "已提交"; badge.className = "text-[8px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600"; }
@@ -2773,7 +2775,7 @@
                     email: currentUser.Email,
                     role: currentUser.Role,
                     section: currentUser.Section,
-                    surveyId: activeSurveyId || "",
+                    surveyId: currentSurveyId || '',
                     batchData: selectedBatchData
                 });
 
@@ -2786,7 +2788,7 @@
                 }
             } catch (e) {
                 console.error("handleSaveBatchSurvey Error:", e);
-                showToast("連線異常", true);
+                showToast("連綫異常: " + (e.message || e), true);
             } finally {
                 setBtnLoading(btn, false, "批次儲存劃記");
             }

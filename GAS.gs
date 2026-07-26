@@ -218,6 +218,7 @@ function getSurveyStatus(data) {
         return {
             success: true,
             active: true,
+            surveyId: String(activeId),
             title: template[1],
             description: template[2],
             questions: JSON.parse(template[3] || "[]"),
