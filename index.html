@@ -2548,6 +2548,72 @@
         }
 
         let currentSurveyFillMode = 'single';
+        let currentBatchFilterName = '';
+
+        function handleSurveyAutofillChange(val) {
+            if (currentSurveyFillMode === 'single') {
+                autofillSurveyWithStaff(val);
+            } else if (currentSurveyFillMode === 'batch') {
+                filterBatchMembersByName(val);
+            }
+        }
+
+        function filterBatchMembersByName(name) {
+            currentBatchFilterName = name || '';
+            const cards = document.querySelectorAll('.batch-member-card');
+            if (!cards) return;
+
+            let matchCount = 0;
+            cards.forEach(card => {
+                const cardName = String(card.dataset.name || "").trim();
+                if (!currentBatchFilterName || cardName === currentBatchFilterName) {
+                    card.classList.remove('hidden');
+                    matchCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            // 顯示篩選狀態提示
+            const badge = document.getElementById('survey-autofill-badge');
+            const txt = document.getElementById('survey-autofill-status-text');
+            if (badge && txt) {
+                if (currentBatchFilterName) {
+                    txt.innerText = `🔍 批次過濾：「${currentBatchFilterName}」（共 ${matchCount} 位符合）`;
+                    badge.classList.remove('hidden');
+                    badge.classList.add('flex');
+                } else {
+                    badge.classList.replace('flex', 'hidden');
+                }
+            }
+        }
+
+        function clearSurveyAutofill() {
+            const select = document.getElementById('survey-autofill-select');
+            if (select) select.value = "";
+            const badge = document.getElementById('survey-autofill-badge');
+            if (badge) badge.classList.replace('flex', 'hidden');
+
+            if (currentSurveyFillMode === 'single') {
+                // 清除非本人的特別帶入個資
+                const questions = surveyQuestions || [];
+                questions.forEach(q => {
+                    const labelStr = String(q.label || "").toLowerCase();
+                    if (
+                        labelStr.includes("姓名") || labelStr.includes("名字") || labelStr === "name" ||
+                        labelStr.includes("組別") || labelStr.includes("聲部") || labelStr.includes("section") || labelStr === "組" ||
+                        labelStr.includes("手機") || labelStr.includes("電話") || labelStr.includes("連絡") || labelStr.includes("聯絡") || labelStr.includes("phone") ||
+                        labelStr.includes("身分證") || labelStr.includes("身份證") || labelStr.includes("id") ||
+                        labelStr.includes("生日") || labelStr.includes("出生") || labelStr.includes("birthday")
+                    ) {
+                        delete allSurveyResponses[q.label];
+                    }
+                });
+                renderCurrentSection();
+            } else if (currentSurveyFillMode === 'batch') {
+                filterBatchMembersByName("");
+            }
+        }
 
         function switchSurveyFillMode(mode) {
             currentSurveyFillMode = mode;
@@ -2562,12 +2628,24 @@
             const saveSingleBtn = document.getElementById('save-survey-btn');
             const saveBatchBtn = document.getElementById('save-batch-survey-btn');
 
+            clearSurveyAutofill();
+
+            const userRole = String(currentUser?.Role || currentUser?.role || '').trim().toLowerCase();
+            const isAdminOrOfficer = userRole === 'admin' || userRole === 'officer';
+
             if (mode === 'batch') {
                 if (singleTab) singleTab.className = 'flex-1 py-2 rounded-xl text-xs font-black text-slate-500 hover:text-slate-700 transition-all';
                 if (batchTab) batchTab.className = 'flex-1 py-2 rounded-xl text-xs font-black bg-white text-indigo-600 shadow-sm transition-all';
                 if (contentBox) contentBox.classList.add('hidden');
                 if (batchBox) batchBox.classList.remove('hidden');
-                if (autofillContainer) autofillContainer.classList.add('hidden');
+
+                // 批次代填時，管理員與幹部亦可顯示名冊篩選功能
+                if (isAdminOrOfficer && autofillContainer) {
+                    autofillContainer.classList.remove('hidden');
+                    autofillContainer.classList.add('flex');
+                } else if (autofillContainer) {
+                    autofillContainer.classList.add('hidden');
+                }
 
                 if (nextBtn) nextBtn.classList.add('hidden');
                 if (prevBtn) prevBtn.classList.add('hidden');
@@ -2580,6 +2658,14 @@
                 if (batchTab) batchTab.className = 'flex-1 py-2 rounded-xl text-xs font-black text-slate-500 hover:text-slate-700 transition-all';
                 if (contentBox) contentBox.classList.remove('hidden');
                 if (batchBox) batchBox.classList.add('hidden');
+
+                // 個人模式下，同樣依照權限判定是否顯示帶入功能
+                if (isAdminOrOfficer && autofillContainer) {
+                    autofillContainer.classList.remove('hidden');
+                    autofillContainer.classList.add('flex');
+                } else if (autofillContainer) {
+                    autofillContainer.classList.add('hidden');
+                }
 
                 if (saveBatchBtn) saveBatchBtn.classList.add('hidden');
                 renderCurrentSection(); // 還原個人填寫按鈕與頁碼
@@ -2685,6 +2771,12 @@
                         </div>
                     </div>`;
                 }).join('');
+
+                // 新增：重新渲染列表後，若有現成的過濾條件，立即套用
+                if (currentSurveyFillMode === 'batch' && currentBatchFilterName) {
+                    setTimeout(() => filterBatchMembersByName(currentBatchFilterName), 0);
+                }
+
                 return true;
             };
 
@@ -2846,6 +2938,10 @@
             const staff = window.allStaffData.find(s => s.Name === name);
             if (!staff) return;
 
+            // 先儲存當前頁面上已填寫的其他輸入，防止重繪被蓋掉
+            const currentAnswers = collectCurrentSectionAnswers ? collectCurrentSectionAnswers() : {};
+            Object.assign(allSurveyResponses, currentAnswers);
+
             const questions = surveyQuestions || [];
             questions.forEach(q => {
                 const label = String(q.label || "").toLowerCase();
@@ -2874,10 +2970,19 @@
                 }
             });
 
+            // 顯示視覺提示
+            const badge = document.getElementById('survey-autofill-badge');
+            const txt = document.getElementById('survey-autofill-status-text');
+            if (badge && txt) {
+                txt.innerText = `⚡ 已自動帶入「${staff.Name}」的個資`;
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            }
+
             // 重新渲染當前頁面，讓欄位立即可見
             renderCurrentSection();
 
-            if (select) select.value = "";
+            if (select) select.value = name;
             showToast(`已快速帶入 ${staff.Name} 的個人資料`);
         }
         async function handleSaveSurvey() {
@@ -3438,10 +3543,17 @@
             <div id="survey-autofill-container" class="hidden px-8 pb-3 flex-col gap-1.5">
                 <label
                     class="text-[9px] font-black text-slate-400 uppercase tracking-widest text-left">快速帶入行政組個資</label>
-                <select id="survey-autofill-select" onchange="autofillSurveyWithStaff(this.value)"
+                <select id="survey-autofill-select" onchange="handleSurveyAutofillChange(this.value)"
                     class="w-full px-4 py-3 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-indigo-600 outline-none font-bold text-xs shadow-sm">
                     <option value="">選擇行政協助人員...</option>
                 </select>
+                <!-- 視覺化狀態指示 -->
+                <div id="survey-autofill-badge"
+                    class="hidden mt-1.5 items-center justify-between px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-[10px] font-black text-indigo-700">
+                    <span id="survey-autofill-status-text"></span>
+                    <button type="button" onclick="clearSurveyAutofill()"
+                        class="text-rose-500 hover:text-rose-700 active:scale-95 transition-all">清除</button>
+                </div>
             </div>
             <div id="survey-content-container" class="flex-1 overflow-y-auto px-8 pb-4">
                 <div id="survey-dynamic-fields" class="space-y-5"></div>
