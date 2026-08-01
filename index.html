@@ -2181,15 +2181,21 @@
                     // 雙重防護：若後端回傳 memberList 為空（例如 Admin 登入且線上 GAS 後端未完成同步）
                     // 前端自動由本機快取或非同步補抓成員名單，進行狀態比對與產生未填寫名單
                     if (memberList.length === 0) {
-                        let rawMembers = window.cachedMemberList || window.allStaffData || window.cachedAllMembersForPerf || [];
+                        let rawMembers = window.cachedMemberList || window.cachedAllMembersForPerf || [];
                         if (!rawMembers || rawMembers.length === 0) {
                             try {
-                                const staffRes = await callBackendWithTimeout('getStaffList', {}, 2000);
-                                if (staffRes?.success && Array.isArray(staffRes.data)) {
-                                    rawMembers = staffRes.data;
-                                    window.allStaffData = rawMembers;
+                                const memberRes = await callBackendWithTimeout('getMemberListForDelegation', {}, 2500);
+                                if (memberRes?.success && Array.isArray(memberRes.data) && memberRes.data.length > 0) {
+                                    rawMembers = memberRes.data;
+                                    window.cachedMemberList = rawMembers;
+                                } else {
+                                    const staffRes = await callBackendWithTimeout('getStaffList', {}, 2000);
+                                    if (staffRes?.success && Array.isArray(staffRes.data)) {
+                                        rawMembers = staffRes.data;
+                                        window.allStaffData = rawMembers;
+                                    }
                                 }
-                            } catch (e) { console.warn("Fetch staff list error:", e); }
+                            } catch (e) { console.warn("Fetch orchestra member list error:", e); }
                         }
 
                         if (Array.isArray(rawMembers) && rawMembers.length > 0) {
