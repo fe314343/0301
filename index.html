@@ -2174,39 +2174,13 @@
                     else resultEl.innerHTML = results.map(r => `<div class="p-4 bg-slate-50 rounded-xl space-y-2"><p class="text-xs font-black text-slate-700">${r.label}</p><div class="space-y-1">${Object.entries(r.stats || {}).map(([k, v]) => `<div class="flex justify-between text-[10px] font-bold text-slate-500"><span>${k}</span><span>${v} 票</span></div>`).join('')}</div></div>`).join('');
                 }
 
-                // 2. 渲染回覆管理列表
+                // 2. 渲染回覆管理列表 (支援 全部/已填寫/未填寫 動態過濾)
                 if (listEl) {
-                    const isLeader = currentUser.Role === 'Leader';
-                    const memberList = res.memberList || [];
-
-                    if (isLeader && memberList.length > 0) {
-                        // 組長模式：顯示該組全員名單 + 填寫狀態
-                        const filledCount = memberList.filter(m => m.filled).length;
-                        listEl.innerHTML = `
-                            <div class="flex justify-between items-center mb-4 px-1">
-                                <p class="text-[11px] font-black text-slate-500">全組 ${memberList.length} 人</p>
-                                <p class="text-[11px] font-black">
-                                    <span class="text-emerald-500">${filledCount} 已填</span>
-                                    <span class="text-slate-300 mx-1">|</span>
-                                    <span class="text-rose-400">${memberList.length - filledCount} 未填</span>
-                                </p>
-                            </div>` +
-                            memberList.map(m => `
-                                <div class="bg-slate-50 p-4 rounded-2xl border border-white shadow-sm">
-                                    <div class="flex justify-between items-center">
-                                        <div class="text-left">
-                                            <p class="text-sm font-black text-slate-800">${m.name} <span class="text-[9px] font-bold text-slate-400">(${m.instrument})</span></p>
-                                        </div>
-                                        ${m.filled
-                                    ? '<span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 已填寫</span>'
-                                    : '<span class="text-[10px] font-black text-rose-400 bg-rose-50 px-2.5 py-1 rounded-lg flex items-center gap-1"><i data-lucide="circle-x" class="w-3.5 h-3.5"></i> 未填寫</span>'
-                                }
-                                    </div>
-                                </div>
-                            `).join('');
-                        safeCreateIcons();
+                    currentSurveyMemberList = res.memberList || [];
+                    if (currentSurveyMemberList.length > 0) {
+                        renderSurveyMemberAdminList();
                     } else {
-                        // Admin 模式：顯示已回覆清單
+                        // 備用防護：若本機無成員名單，僅顯示 rawData
                         const rawData = res.rawData || [];
                         if (rawData.length === 0) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前尚無回覆紀錄</div>';
                         else listEl.innerHTML = rawData.map(r => `
@@ -2225,6 +2199,83 @@
                 if (resultEl) resultEl.innerHTML = '<div class="py-10 text-rose-400 font-bold text-center">載入統計失敗</div>';
                 if (listEl) listEl.innerHTML = '<div class="py-10 text-rose-400 font-bold text-center">載入列表失敗</div>';
             }
+            safeCreateIcons();
+        }
+
+        let currentSurveyMemberList = [];
+        let currentSurveyListFilter = 'all';
+
+        function filterSurveyAdminList(filter) {
+            currentSurveyListFilter = filter;
+            renderSurveyMemberAdminList();
+        }
+
+        function renderSurveyMemberAdminList() {
+            const listEl = document.getElementById('sur-admin-list');
+            if (!listEl) return;
+
+            if (!currentSurveyMemberList || currentSurveyMemberList.length === 0) {
+                listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前尚無名冊資料</div>';
+                return;
+            }
+
+            const filledCount = currentSurveyMemberList.filter(m => m.filled).length;
+            const unfilledCount = currentSurveyMemberList.length - filledCount;
+
+            let displayList = currentSurveyMemberList;
+            if (currentSurveyListFilter === 'filled') {
+                displayList = currentSurveyMemberList.filter(m => m.filled);
+            } else if (currentSurveyListFilter === 'unfilled') {
+                displayList = currentSurveyMemberList.filter(m => !m.filled);
+            }
+
+            const filterTabsHtml = `
+                <div class="space-y-3 mb-4 sticky top-0 bg-white pt-1 pb-2 z-10 border-b border-slate-100">
+                    <div class="flex justify-between items-center px-1">
+                        <p class="text-[11px] font-black text-slate-500">總計 ${currentSurveyMemberList.length} 人</p>
+                        <p class="text-[11px] font-black flex items-center gap-1">
+                            <span class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">${filledCount} 已填</span>
+                            <span class="text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md">${unfilledCount} 未填</span>
+                        </p>
+                    </div>
+                    <div class="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+                        <button type="button" onclick="filterSurveyAdminList('all')" class="flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${currentSurveyListFilter === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
+                            全部 (${currentSurveyMemberList.length})
+                        </button>
+                        <button type="button" onclick="filterSurveyAdminList('filled')" class="flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${currentSurveyListFilter === 'filled' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
+                            已填寫 (${filledCount})
+                        </button>
+                        <button type="button" onclick="filterSurveyAdminList('unfilled')" class="flex-1 py-1.5 rounded-lg text-xs font-black transition-all ${currentSurveyListFilter === 'unfilled' ? 'bg-white text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
+                            未填寫 (${unfilledCount})
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            if (displayList.length === 0) {
+                listEl.innerHTML = filterTabsHtml + `<div class="py-8 text-slate-400 font-bold text-center text-xs">無符合條件的名單</div>`;
+                return;
+            }
+
+            const cardsHtml = displayList.map(m => `
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-white shadow-sm mb-2.5">
+                    <div class="flex justify-between items-center">
+                        <div class="text-left">
+                            <p class="text-sm font-black text-slate-800 flex items-center gap-1.5 flex-wrap">
+                                <span>${m.name}</span>
+                                ${m.section ? `<span class="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">${m.section}</span>` : ''}
+                                ${m.instrument ? `<span class="text-[9px] font-bold text-slate-400">(${m.instrument})</span>` : ''}
+                            </p>
+                        </div>
+                        ${m.filled
+                    ? '<span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg flex items-center gap-1 shrink-0"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 已填寫</span>'
+                    : '<span class="text-[10px] font-black text-rose-500 bg-rose-50 px-2.5 py-1 rounded-lg flex items-center gap-1 shrink-0"><i data-lucide="circle-x" class="w-3.5 h-3.5"></i> 未填寫</span>'
+                }
+                    </div>
+                </div>
+            `).join('');
+
+            listEl.innerHTML = filterTabsHtml + `<div class="space-y-1">${cardsHtml}</div>`;
             safeCreateIcons();
         }
 

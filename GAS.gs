@@ -473,26 +473,34 @@ function getSurveyResults(data) {
             return item;
         });
 
-        // 3. 若為 Leader，回傳該組全員名單（含填寫狀態）
+        // 3. 回傳成員名單（含填寫狀態），用於回覆管理與未填過濾
         let memberList = [];
-        if (data.role === 'Leader' && data.section) {
+        const isLeader = data.role === 'Leader' && data.section;
+        const isAdminOrOfficer = (data.role === 'Admin' || data.role === 'Officer');
+        if (isLeader || isAdminOrOfficer) {
             const memS = SS.getSheetByName("Members");
-            const allMembers = memS.getDataRange().getValues().slice(1);
-            const sectionMembers = allMembers.filter(m => String(m[2] || "").trim() === data.section);
-            // 收集已填寫的 email 與 姓名 清單 (相容自己填寫與他人代填)
-            const filledEmails = rows.map(r => String(r[1] || "").toLowerCase().trim());
-            const filledNames = rows.map(r => String(r[2] || "").trim());
-            memberList = sectionMembers.map(m => {
-                const memName = String(m[1] || "").trim();
-                const memEmail = String(m[3] || "").toLowerCase().trim();
-                return {
-                    name: m[1],
-                    instrument: m[6] || "",
-                    filled: filledEmails.includes(memEmail) || filledNames.includes(memName)
-                };
-            });
-            // 已填寫排後面，未填寫排前面
-            memberList.sort((a, b) => a.filled === b.filled ? 0 : a.filled ? 1 : -1);
+            if (memS) {
+                const allMembers = memS.getDataRange().getValues().slice(1);
+                const filteredMembers = isLeader
+                    ? allMembers.filter(m => String(m[2] || "").trim() === data.section)
+                    : allMembers;
+                // 收集已填寫的 email 與 姓名 清單 (相容自己填寫與他人代填)
+                const filledEmails = rows.map(r => String(r[1] || "").toLowerCase().trim());
+                const filledNames = rows.map(r => String(r[2] || "").trim());
+                memberList = filteredMembers.map(m => {
+                    const memName = String(m[1] || "").trim();
+                    const memEmail = String(m[3] || "").toLowerCase().trim();
+                    const sectionStr = String(m[2] || "").trim();
+                    return {
+                        name: memName,
+                        section: sectionStr,
+                        instrument: String(m[6] || "").trim(),
+                        filled: filledEmails.includes(memEmail) || filledNames.includes(memName)
+                    };
+                }).filter(m => m.name); // 排除空欄位
+                // 已填寫排後面，未填寫排前面
+                memberList.sort((a, b) => a.filled === b.filled ? 0 : a.filled ? 1 : -1);
+            }
         }
 
         return { success: true, data: results, rawData: rawData.reverse(), memberList: memberList };
