@@ -2176,11 +2176,50 @@
 
                 // 2. 渲染回覆管理列表 (支援 全部/已填寫/未填寫 動態過濾)
                 if (listEl) {
-                    currentSurveyMemberList = res.memberList || [];
+                    let memberList = res.memberList || [];
+
+                    // 雙重防護：若後端回傳 memberList 為空（例如 Admin 登入且線上 GAS 後端未完成同步）
+                    // 前端自動由本機快取或非同步補抓成員名單，進行狀態比對與產生未填寫名單
+                    if (memberList.length === 0) {
+                        let rawMembers = window.cachedMemberList || window.allStaffData || window.cachedAllMembersForPerf || [];
+                        if (!rawMembers || rawMembers.length === 0) {
+                            try {
+                                const staffRes = await callBackendWithTimeout('getStaffList', {}, 2000);
+                                if (staffRes?.success && Array.isArray(staffRes.data)) {
+                                    rawMembers = staffRes.data;
+                                    window.allStaffData = rawMembers;
+                                }
+                            } catch (e) { console.warn("Fetch staff list error:", e); }
+                        }
+
+                        if (Array.isArray(rawMembers) && rawMembers.length > 0) {
+                            const rawData = res.rawData || [];
+                            const filledEmails = rawData.map(r => String(r.email || '').toLowerCase().trim());
+                            const filledNames = rawData.map(r => String(r.name || '').trim());
+
+                            memberList = rawMembers.map(m => {
+                                const memName = String(m.Name || m.name || '').trim();
+                                const memEmail = String(m.Email || m.email || '').toLowerCase().trim();
+                                const sec = String(m.Section || m.section || '').trim();
+                                const inst = String(m.Instrument || m.instrument || m.Instrument_1 || '').trim();
+                                const isFilled = filledEmails.includes(memEmail) || filledNames.includes(memName);
+                                return {
+                                    name: memName,
+                                    section: sec,
+                                    instrument: inst,
+                                    filled: isFilled
+                                };
+                            }).filter(m => m.name);
+
+                            memberList.sort((a, b) => a.filled === b.filled ? 0 : a.filled ? 1 : -1);
+                        }
+                    }
+
+                    currentSurveyMemberList = memberList;
                     if (currentSurveyMemberList.length > 0) {
                         renderSurveyMemberAdminList();
                     } else {
-                        // 備用防護：若本機無成員名單，僅顯示 rawData
+                        // 備用防護：若本機完全無成員名冊，僅顯示 rawData
                         const rawData = res.rawData || [];
                         if (rawData.length === 0) listEl.innerHTML = '<div class="py-10 text-slate-400 font-bold text-center">目前尚無回覆紀錄</div>';
                         else listEl.innerHTML = rawData.map(r => `
