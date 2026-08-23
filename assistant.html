@@ -399,11 +399,34 @@
         let curUser = null, staffRoster = [], selectedHelpers = [], selectedSurveyEvent = null;
 
         let customQuestions = [
-            { id: 'q_transit', title: '🚘 交通方式', type: 'checkbox', options: ['自行開車', '騎乘機車', '搭車/共乘'] },
-            { id: 'q_parking', title: '🅿️ 停車需求', type: 'checkbox', options: ['需要汽車位', '需要機車位'] },
-            { id: 'q_meal', title: '🍱 膳食調查', type: 'checkbox', options: ['便當(葷)', '便當(素)', '不用餐/自備'] },
-            { id: 'q_snack', title: '🍡 點心需求', type: 'radio', options: ['需要點心', '不用點心'] }
+            { id: 'q_transit', title: '🚘 交通方式', type: 'checkbox', options: ['自行開車', '去程搭車', '回程搭車'], required: true },
+            { id: 'q_parking', title: '🅿️ 停車需求', type: 'text', options: [''], required: false },
+            { id: 'q_meal', title: '🍱 膳食調查', type: 'checkbox', options: ['用餐', '不用餐/自備'], required: true },
+            { id: 'q_snack', title: '🍡 點心需求', type: 'radio', options: ['需要點心', '不用點心'], required: true }
         ];
+
+        function maskID(id) {
+            if (!id) return '';
+            id = id.trim().toUpperCase();
+            if (id.length >= 7) {
+                return id.substring(0, 4) + 'xxx' + id.substring(7);
+            }
+            return id;
+        }
+
+        function maskBirthday(bday) {
+            if (!bday) return '';
+            const str = String(bday).trim();
+            if (str.includes('-')) {
+                const pts = str.split('-');
+                return 'xx-' + pts.slice(1).join('-');
+            }
+            if (str.includes('/')) {
+                const pts = str.split('/');
+                return 'xx/' + pts.slice(1).join('/');
+            }
+            return bday;
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -533,6 +556,10 @@
                         <label class="text-[8px] font-bold text-slate-400 uppercase">選項 (逗號分隔)</label>
                         <input type="text" class="q-options-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold" value="${(q.options || []).join(', ')}">
                     </div>
+                    <div class="flex items-center gap-1.5 pt-1">
+                        <input type="checkbox" class="q-required-check w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer" ${q.required ? 'checked' : ''}>
+                        <label class="text-[9px] font-black text-slate-500 uppercase cursor-pointer select-none">此題目為必填 (Required)</label>
+                    </div>
                 </div>
             `).join('');
             document.getElementById('form-builder-panel').classList.remove('hidden');
@@ -548,7 +575,8 @@
                 id: 'q_' + Date.now(),
                 title: '新題目',
                 type: 'checkbox',
-                options: ['選項A', '選項B']
+                options: ['選項A', '選項B'],
+                required: false
             });
             openFormBuilder();
         }
@@ -567,11 +595,13 @@
                 const type = card.querySelector('.q-type-select').value;
                 const optVal = card.querySelector('.q-options-input')?.value || '';
                 const options = optVal.split(',').map(s => s.trim()).filter(Boolean);
+                const required = !!card.querySelector('.q-required-check')?.checked;
                 newQ.push({
                     id: card.dataset.qid,
                     title,
                     type,
-                    options
+                    options,
+                    required
                 });
             });
             customQuestions = newQ;
@@ -582,10 +612,10 @@
 
         function resetToDefaultQuestions() {
             customQuestions = [
-                { id: 'q_transit', title: '🚘 交通方式', type: 'checkbox', options: ['自行開車', '騎乘機車', '搭車/共乘'] },
-                { id: 'q_parking', title: '🅿️ 停車需求', type: 'checkbox', options: ['需要汽車位', '需要機車位'] },
-                { id: 'q_meal', title: '🍱 膳食調查', type: 'checkbox', options: ['便當(葷)', '便當(素)', '不用餐/自備'] },
-                { id: 'q_snack', title: '🍡 點心需求', type: 'radio', options: ['需要點心', '不用點心'] }
+                { id: 'q_transit', title: '🚘 交通方式', type: 'checkbox', options: ['自行開車', '去程搭車', '回程搭車'], required: true },
+                { id: 'q_parking', title: '🅿️ 停車需求', type: 'text', options: [''], required: false },
+                { id: 'q_meal', title: '🍱 膳食調查', type: 'checkbox', options: ['用餐', '不用餐/自備'], required: true },
+                { id: 'q_snack', title: '🍡 點心需求', type: 'radio', options: ['需要點心', '不用點心'], required: true }
             ];
             openFormBuilder();
             showToast('已恢復原始問卷模板，請記得按「儲存」套用');
@@ -621,8 +651,8 @@
                     ? myInfo.Birthday.toISOString().substring(0, 10)
                     : String(myInfo.Birthday).substring(0, 10);
             }
-            document.getElementById('prof-birthday').value = birthday;
-            document.getElementById('prof-id-number').value = myInfo.ID_Number || '';
+            document.getElementById('prof-birthday').value = maskBirthday(birthday);
+            document.getElementById('prof-id-number').value = maskID(myInfo.ID_Number || '');
             document.getElementById('prof-password').value = '';
 
             const consentStatusEl = document.getElementById('prof-consent-status');
@@ -645,11 +675,24 @@
             if (!curUser) return;
             const btn = document.getElementById('btn-save-profile');
             const phone = document.getElementById('prof-phone').value.trim();
-            const birthday = document.getElementById('prof-birthday').value.trim();
-            const idNumber = document.getElementById('prof-id-number').value.trim().toUpperCase();
+            let birthday = document.getElementById('prof-birthday').value.trim();
+            let idNumber = document.getElementById('prof-id-number').value.trim().toUpperCase();
             const password = document.getElementById('prof-password').value.trim();
             const consentChk = document.getElementById('prof-consent-chk').checked;
             const privacyConsent = consentChk ? 'YES' : 'NO';
+
+            const myInfo = staffRoster.find(m => m.Email.toLowerCase() === curUser.Email.toLowerCase()) || curUser;
+            const origBirthday = myInfo.Birthday ? (myInfo.Birthday instanceof Date ? myInfo.Birthday.toISOString().substring(0, 10) : String(myInfo.Birthday).substring(0, 10)) : '';
+            const origIDNumber = myInfo.ID_Number || '';
+
+            if (birthday.includes('xx-') || birthday.includes('xx/')) {
+                const origYear = origBirthday ? origBirthday.substring(0, 4) : new Date().getFullYear();
+                birthday = birthday.replace('xx', origYear);
+            }
+            if (idNumber.includes('XXX')) {
+                const origMiddle = origIDNumber && origIDNumber.length >= 7 ? origIDNumber.substring(4, 7) : '123';
+                idNumber = idNumber.replace('XXX', origMiddle);
+            }
 
             setBtnLoading(btn, true, '正在儲存...');
             const res = await api('saveMember', { email: curUser.Email, phone, birthday, idNumber, password, privacyConsent });
@@ -801,8 +844,10 @@
             const safeName = String(m.Name || '助');
             const initial = safeName.charAt(0) || '助';
             const phone = m.Phone || '';
-            const birthday = m.Birthday ? (m.Birthday instanceof Date ? m.Birthday.toISOString().substring(0, 10) : String(m.Birthday).substring(0, 10)) : '';
-            const idNumber = m.ID_Number || '';
+            const birthdayRaw = m.Birthday ? (m.Birthday instanceof Date ? m.Birthday.toISOString().substring(0, 10) : String(m.Birthday).substring(0, 10)) : '';
+            const idNumberRaw = m.ID_Number || '';
+            const birthdayShow = maskBirthday(birthdayRaw);
+            const idNumberShow = maskID(idNumberRaw);
             const emailKey = m.Email.replace(/[@.]/g, '_');
 
             const dynamicQuestionsHTML = customQuestions.map(q => {
@@ -826,7 +871,7 @@
 
                 return `
                 <div class="space-y-1.5 text-left" data-qid="${q.id}">
-                    <label class="text-[9px] font-black text-slate-400 uppercase">${q.title}</label>
+                    <label class="text-[9px] font-black text-slate-400 uppercase">${q.title} ${q.required ? '<span class="text-rose-500 font-extrabold">*</span>' : ''}</label>
                     ${inputsHTML}
                 </div>`;
             }).join('');
@@ -846,12 +891,12 @@
       </div>
       <div class="space-y-1">
         <label class="text-[9px] font-black text-slate-400 uppercase">生日 (年-月-日)</label>
-        <input type="text" name="birthday" value="${birthday}" placeholder="1995-10-24" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none text-xs font-semibold focus:border-indigo-400 transition-all">
+        <input type="text" name="birthday" value="${birthdayShow}" placeholder="1995-10-24" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none text-xs font-semibold focus:border-indigo-400 transition-all">
       </div>
     </div>
     <div class="space-y-1 text-left">
       <label class="text-[9px] font-black text-slate-400 uppercase block">身分證字號 (辦理保險與安全名冊)</label>
-      <input type="text" name="idNumber" value="${idNumber}" placeholder="例如: A123456789" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none text-xs font-semibold focus:border-indigo-400 transition-all uppercase">
+      <input type="text" name="idNumber" value="${idNumberShow}" placeholder="例如: A123456789" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none text-xs font-semibold focus:border-indigo-400 transition-all uppercase">
     </div>
 
     <div class="space-y-1.5 text-left">
@@ -874,11 +919,15 @@
                 let mealSummary = [];
                 let otherAnswers = [];
 
+                let validationMsg = '';
                 customQuestions.forEach(q => {
                     const inputs = f.querySelectorAll(`[name="dyn_${q.id}_${emailKey}"]`);
                     if (q.type === 'checkbox') {
                         const checked = Array.from(inputs).filter(i => i.checked).map(i => i.value);
                         const val = checked.join('、') || '未填';
+                        if (q.required && checked.length === 0) {
+                            validationMsg = `請填寫【${name}】的「${q.title.replace(/[^\w\u4e00-\u9fa5\s]/g, '').trim()}」`;
+                        }
                         if (q.title.includes('交通')) transitSummary.push(val);
                         else if (q.title.includes('停車')) parkingSummary.push(val);
                         else if (q.title.includes('膳食') || q.title.includes('用餐')) mealSummary.push(val);
@@ -886,19 +935,53 @@
                     } else if (q.type === 'radio') {
                         const checked = Array.from(inputs).find(i => i.checked);
                         const val = checked ? checked.value : '未填';
+                        if (q.required && !checked) {
+                            validationMsg = `請選擇【${name}】的「${q.title.replace(/[^\w\u4e00-\u9fa5\s]/g, '').trim()}」`;
+                        }
                         if (q.title.includes('膳食') || q.title.includes('用餐')) mealSummary.push(val);
                         else if (q.title.includes('點心')) mealSummary.push(`點心:${val}`);
                         else otherAnswers.push(`${q.title}: ${val}`);
                     } else if (q.type === 'text') {
                         const val = inputs[0] ? inputs[0].value.trim() : '';
+                        if (q.required && !val) {
+                            validationMsg = `請填寫【${name}】的「${q.title.replace(/[^\w\u4e00-\u9fa5\s]/g, '').trim()}」`;
+                        }
                         if (val) otherAnswers.push(`${q.title}: ${val}`);
                     }
                 });
+
+                if (validationMsg) {
+                    return showToast(validationMsg, true);
+                }
 
                 const phoneEl = f.querySelector('input[name="phone"]');
                 const birthdayEl = f.querySelector('input[name="birthday"]');
                 const idNumberEl = f.querySelector('input[name="idNumber"]');
                 const notesEl = f.querySelector('textarea[name="notes"]');
+
+                const member = staffRoster.find(m => m.Email.toLowerCase() === email.toLowerCase()) || {};
+                const origBirthday = member.Birthday ? (member.Birthday instanceof Date ? member.Birthday.toISOString().substring(0, 10) : String(member.Birthday).substring(0, 10)) : '';
+                const origIDNumber = member.ID_Number || '';
+
+                let birthdayValue = birthdayEl ? birthdayEl.value.trim() : '';
+                let idNumberValue = idNumberEl ? idNumberEl.value.trim().toUpperCase() : '';
+
+                if (birthdayValue.includes('xx-') || birthdayValue.includes('xx/')) {
+                    const origYear = origBirthday ? origBirthday.substring(0, 4) : new Date().getFullYear();
+                    birthdayValue = birthdayValue.replace('xx', origYear);
+                }
+                if (idNumberValue.includes('XXX')) {
+                    const origMiddle = origIDNumber && origIDNumber.length >= 7 ? origIDNumber.substring(4, 7) : '123';
+                    idNumberValue = idNumberValue.replace('XXX', origMiddle);
+                }
+
+                // 同步回本地名冊快取中，以便保持一致
+                const rosterMember = staffRoster.find(m => m.Email.toLowerCase() === email.toLowerCase());
+                if (rosterMember) {
+                    rosterMember.Phone = phoneEl ? phoneEl.value.trim() : rosterMember.Phone;
+                    rosterMember.Birthday = birthdayValue;
+                    rosterMember.ID_Number = idNumberValue;
+                }
 
                 replies.push({
                     email,
@@ -907,8 +990,8 @@
                     parking: parkingSummary.join(' / ') || '無',
                     meal: mealSummary.join(' / ') + (otherAnswers.length ? ' | ' + otherAnswers.join(', ') : ''),
                     phone: phoneEl ? phoneEl.value.trim() : '',
-                    birthday: birthdayEl ? birthdayEl.value.trim() : '',
-                    idNumber: idNumberEl ? idNumberEl.value.trim().toUpperCase() : '',
+                    birthday: birthdayValue,
+                    idNumber: idNumberValue,
                     notes: notesEl ? notesEl.value.trim() : ''
                 });
             }
