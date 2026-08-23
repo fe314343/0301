@@ -40,6 +40,8 @@ function doPost(e) {
             case 'submitLeave': result = submitLeave(data); break;
             case 'submitPerformance': result = submitPerformance(data); break;
             case 'getPerformances': result = getPerformances(data); break;
+            case 'submitStaffReport': result = submitStaffReport(data); break;
+            case 'getStaffReports': result = getStaffReports(data); break;
             default: result = { success: false, message: "未知指令" };
         }
     } catch (err) {
@@ -584,8 +586,11 @@ function getRealtimeStatus(userData) {
         // 重新加上被誤刪的活動總數計算
         const totalEventsCount = Object.keys(uniqueEvents).length;
 
-        // 過濾掉「行政組」，不讓他們出現在出缺席監控中
-        const filteredMembers = members.slice(1).filter(m => String(m[2] || "").trim() !== "行政組");
+        // 過濾掉「行政組」，不讓他們出現在出缺席監控中 (除非指定 includeStaff 為 true)
+        const includeStaff = userData && (userData.includeStaff === true || userData.includeStaff === "true");
+        const filteredMembers = includeStaff
+            ? members.slice(1)
+            : members.slice(1).filter(m => String(m[2] || "").trim() !== "行政組");
         
         const data = filteredMembers.map(m => {
             const email = String(m[3] || "").toLowerCase().trim();
@@ -1187,6 +1192,126 @@ function getPerformances(data) {
         });
 
         return { success: true, data: results, totalMinutes: personalMinutes };
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+
+// ==========================================
+// E. 行政協助人員專屬報表 (Staff Reports -> Transport & Meal Survey)
+// ==========================================
+
+function submitStaffReport(data) {
+    try {
+        let sheet = SS.getSheetByName("StaffSurveys");
+        if (!sheet) {
+            sheet = SS.insertSheet("StaffSurveys");
+            sheet.appendRow(["時間戳記", "對應日期", "活動名稱", "填寫人Email", "填寫人姓名", "協助人員Email", "協助人員姓名", "組別", "協助職能", "聯絡電話", "身分證字號", "出生年月日", "交通方式", "是否需要停車位", "膳食需求", "備註"]);
+            sheet.getRange(1, 1, 1, 16).setFontWeight("bold").setBackground("#f3f4f6").setHorizontalAlignment("center");
+            sheet.setFrozenRows(1);
+            for (let i = 1; i <= 16; i++) sheet.autoResizeColumn(i);
+        }
+        
+        const replies = data.replies || [];
+        const date = data.date;
+        const eventName = data.eventName;
+        const fillerEmail = String(data.email).toLowerCase().trim();
+        const fillerName = data.name;
+        
+        // 載入團員基本資料庫，比對個資 (以 Email 為主，自動拉取個資)
+        const memS = SS.getSheetByName("Members");
+        const members = memS.getDataRange().getValues().slice(1);
+        const memberMap = {};
+        members.forEach(m => {
+            const email = String(m[3] || "").toLowerCase().trim();
+            memberMap[email] = {
+                section: String(m[2] || ""),
+                instrument: String(m[6] || ""),
+                phone: String(m[9] || ""),
+                birthday: m[10] instanceof Date ? Utilities.formatDate(m[10], "GMT+8", "yyyy-MM-dd") : String(m[10] || ""),
+                idNumber: String(m[11] || "")
+            };
+        });
+
+        const rowsToAppend = [];
+        replies.forEach(r => {
+            const email = String(r.email).toLowerCase().trim();
+            const details = memberMap[email] || { section: "行政組", instrument: "行政", phone: "", birthday: "", idNumber: "" };
+            
+            rowsToAppend.push([
+                new Date(),
+                date,
+                eventName,
+                fillerEmail,
+                fillerName,
+                email,
+                r.name,
+                details.section,
+                details.instrument,
+                r.phone || details.phone || "",
+                r.idNumber || details.idNumber || "",
+                r.birthday || details.birthday || "",
+                r.transit || "",
+                r.parking || "",
+                r.meal || "",
+                r.notes || ""
+            ]);
+        });
+        
+        if (rowsToAppend.length > 0) {
+            const startRow = sheet.getLastRow() + 1;
+            sheet.getRange(startRow, 1, rowsToAppend.length, 16).setValues(rowsToAppend);
+        }
+        
+        return { success: true, count: rowsToAppend.length };
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+
+function getStaffReports(data) {
+    try {
+        const sheet = SS.getSheetByName("StaffSurveys");
+        if (!sheet || sheet.getLastRow() < 2) return { success: true, data: [] };
+
+        const vals = sheet.getDataRange().getValues();
+        const rows = vals.slice(1);
+        const roleType = data.roleType; // 音控 / 錄影 / 場務 / all
+
+        let filtered = rows;
+        if (roleType && roleType !== 'all') {
+            filtered = filtered.filter(r => String(r[8]).trim() === roleType.trim());
+        }
+
+        const dataList = filtered.map(r => {
+            let timeStr = "";
+            try {
+                if (r[0] instanceof Date) {
+                    timeStr = Utilities.formatDate(r[0], "GMT+8", "MM/dd HH:mm");
+                } else {
+                    timeStr = String(r[0] || "");
+                }
+            } catch (e) { timeStr = String(r[0] || ""); }
+
+            return {
+                timestamp: timeStr,
+                date: r[1],
+                eventName: r[2],
+                fillerName: r[4],
+                email: r[5],
+                name: r[6],
+                roleType: r[8],
+                phone: r[9],
+                idNumber: r[10],
+                birthday: r[11],
+                transit: r[12],
+                parking: r[13],
+                meal: r[14],
+                notes: r[15]
+            };
+        });
+
+        return { success: true, data: dataList.reverse() }; // Latest first
     } catch (e) {
         return { success: false, message: e.toString() };
     }
