@@ -214,10 +214,16 @@
 
                     <div id="builder-questions-list" class="space-y-3"></div>
 
-                    <button onclick="addBuilderQuestion()"
-                        class="w-full py-2.5 rounded-xl bg-white border border-indigo-300 text-indigo-600 font-black text-xs flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
-                        <i data-lucide="plus" class="w-4 h-4"></i> 新增題目
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="addBuilderQuestion()"
+                            class="flex-1 py-2.5 rounded-xl bg-white border border-indigo-300 text-indigo-600 font-black text-xs flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
+                            <i data-lucide="plus" class="w-4 h-4"></i> 新增題目
+                        </button>
+                        <button onclick="resetToDefaultQuestions()"
+                            class="flex-1 py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 font-black text-xs flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 使用原始問卷
+                        </button>
+                    </div>
                     <button onclick="saveDynamicFormConfig()"
                         class="w-full py-3 btn-ind text-white font-black text-xs rounded-xl active:scale-95 shadow-sm">儲存並套用自訂問卷</button>
                 </div>
@@ -572,6 +578,17 @@
             localStorage.setItem('custom_dynamic_questions', JSON.stringify(customQuestions));
             closeFormBuilder();
             showToast('自訂問卷題目與選項已成功儲存！');
+        }
+
+        function resetToDefaultQuestions() {
+            customQuestions = [
+                { id: 'q_transit', title: '🚘 交通方式', type: 'checkbox', options: ['自行開車', '騎乘機車', '搭車/共乘'] },
+                { id: 'q_parking', title: '🅿️ 停車需求', type: 'checkbox', options: ['需要汽車位', '需要機車位'] },
+                { id: 'q_meal', title: '🍱 膳食調查', type: 'checkbox', options: ['便當(葷)', '便當(素)', '不用餐/自備'] },
+                { id: 'q_snack', title: '🍡 點心需求', type: 'radio', options: ['需要點心', '不用點心'] }
+            ];
+            openFormBuilder();
+            showToast('已恢復原始問卷模板，請記得按「儲存」套用');
         }
 
         async function switchTab(tabId) {
