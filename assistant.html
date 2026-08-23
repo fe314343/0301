@@ -87,7 +87,6 @@
                 <p class="text-xs text-slate-400 font-bold">錄影・音控・場務 專用入口</p>
             </div>
             <div class="glass p-6 rounded-3xl shadow-xl space-y-4">
-                <!-- 登入 / 申請切換按鈕 -->
                 <div class="flex gap-1 p-1 bg-slate-100 rounded-2xl">
                     <button onclick="setAuthMode('login')" id="tab-login"
                         class="flex-1 py-2 rounded-xl text-xs font-black bg-white text-indigo-600 shadow-sm transition-all">登入</button>
@@ -95,7 +94,6 @@
                         class="flex-1 py-2 rounded-xl text-xs font-black text-slate-400 transition-all">申請帳號</button>
                 </div>
 
-                <!-- 登入表單 -->
                 <div id="form-login" class="space-y-3">
                     <div class="space-y-1">
                         <label class="text-[10px] font-black text-slate-400 uppercase ml-1">帳號</label>
@@ -113,7 +111,6 @@
                     </button>
                 </div>
 
-                <!-- 註冊表單 -->
                 <div id="form-register" class="hidden space-y-3">
                     <div class="space-y-1">
                         <label class="text-[10px] font-black text-slate-400 uppercase ml-1">姓名</label>
@@ -175,11 +172,11 @@
                 </button>
             </div>
 
-            <!-- 考勤管理分頁 -->
+            <!-- 組員管理分頁 -->
             <div id="tab-roster" class="tab-pane hidden space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-base font-black text-slate-800 flex items-center gap-1.5"><i data-lucide="users"
-                            class="w-4 h-4 text-indigo-500"></i> 組員出缺席管理</h2>
+                            class="w-4 h-4 text-indigo-500"></i> 歷屆組員</h2>
                     <select id="roster-filter" onchange="loadRoster()"
                         class="bg-white px-3 py-1.5 rounded-2xl text-[10px] font-black border border-slate-200 outline-none shadow-sm">
                         <option value="音控">音控組</option>
@@ -190,7 +187,6 @@
                         <option value="all">全行政</option>
                     </select>
                 </div>
-                <div id="roster-summary" class="hidden"></div>
                 <div id="roster-list" class="space-y-2.5"></div>
             </div>
 
@@ -201,43 +197,29 @@
                             class="w-4 h-4 text-indigo-500"></i> 交通與用餐統計調查</h2>
                     <button onclick="openFormBuilder()" id="btn-form-builder"
                         class="hidden px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black flex items-center gap-1 active:scale-95">
-                        <i data-lucide="sliders" class="w-3.5 h-3.5"></i> 自訂表單選項
+                        <i data-lucide="sliders" class="w-3.5 h-3.5"></i> 自訂問卷題目
                     </button>
                 </div>
 
-                <!-- 幹部自訂表單選項面板 (僅 Admin 可見) -->
+                <!-- 幹部動態自訂題目面板 (僅 Admin 可見) -->
                 <div id="form-builder-panel"
-                    class="hidden glass p-4 rounded-3xl shadow-md space-y-3 border-2 border-indigo-200">
+                    class="hidden glass p-4 rounded-3xl shadow-md space-y-4 border-2 border-indigo-200">
                     <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
                         <p class="text-xs font-black text-indigo-900 flex items-center gap-1.5"><i data-lucide="sliders"
-                                class="w-4 h-4 text-indigo-600"></i> 自訂交通與用餐調查表單設定</p>
+                                class="w-4 h-4 text-indigo-600"></i> 自訂問卷題目與選項管理</p>
                         <button onclick="closeFormBuilder()" class="text-slate-400 hover:text-slate-600"><i
                                 data-lucide="x" class="w-4 h-4"></i></button>
                     </div>
-                    <p class="text-[10px] text-slate-500 font-bold">您可以自由修改此活動問卷中可選的項目（以逗號分隔）：</p>
+                    <p class="text-[10px] text-slate-500 font-bold">您可以自由新增、刪除或修改本次問卷的所有題目與選項：</p>
 
-                    <div class="space-y-2 text-left">
-                        <label class="text-[9px] font-black text-slate-500 uppercase">🚘 交通方式選項 (逗號分隔)</label>
-                        <input type="text" id="cfg-transit" value="自行開車, 騎乘機車, 搭車/共乘"
-                            class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold">
-                    </div>
-                    <div class="space-y-2 text-left">
-                        <label class="text-[9px] font-black text-slate-500 uppercase">🅿️ 停車需求選項 (逗號分隔)</label>
-                        <input type="text" id="cfg-parking" value="需要汽車位, 需要機車位"
-                            class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold">
-                    </div>
-                    <div class="space-y-2 text-left">
-                        <label class="text-[9px] font-black text-slate-500 uppercase">🍱 膳食調查選項 (逗號分隔)</label>
-                        <input type="text" id="cfg-meal" value="便當(葷), 便當(素), 不用餐/自備"
-                            class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold">
-                    </div>
-                    <div class="space-y-2 text-left">
-                        <label class="text-[9px] font-black text-slate-500 uppercase">🍡 點心需求選項 (逗號分隔)</label>
-                        <input type="text" id="cfg-snack" value="需要點心, 不用點心"
-                            class="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold">
-                    </div>
-                    <button onclick="saveFormConfig()"
-                        class="w-full py-2.5 btn-ind text-white font-black text-xs rounded-xl active:scale-95 shadow-sm">套用並儲存自訂表單設定</button>
+                    <div id="builder-questions-list" class="space-y-3"></div>
+
+                    <button onclick="addBuilderQuestion()"
+                        class="w-full py-2.5 rounded-xl bg-white border border-indigo-300 text-indigo-600 font-black text-xs flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i> 新增題目
+                    </button>
+                    <button onclick="saveDynamicFormConfig()"
+                        class="w-full py-3 btn-ind text-white font-black text-xs rounded-xl active:scale-95 shadow-sm">儲存並套用自訂問卷</button>
                 </div>
 
                 <!-- 步驟指示器 -->
@@ -272,7 +254,7 @@
                     </button>
                 </div>
 
-                <!-- 步驟 2：填寫個人化表格 -->
+                <!-- 步驟 2：動態產生個人化表格 -->
                 <div id="wizard-step2" class="hidden space-y-4">
                     <button onclick="backToStep1()"
                         class="text-[10px] font-black text-slate-400 flex items-center gap-1 hover:text-slate-600 transition-all">
@@ -300,54 +282,18 @@
                     <button onclick="resetWizard()"
                         class="px-6 py-3 rounded-2xl text-white font-black text-sm btn-ind active:scale-95 transition-all shadow-md">重新登記新場次</button>
                 </div>
-
-                <!-- 申報歷史紀錄 -->
-                <div id="wizard-history" class="">
-                    <p class="text-xs font-black text-left text-slate-500 border-l-4 border-indigo-400 pl-2 mb-3">調查申報紀錄
-                    </p>
-                    <div id="past-reports" class="space-y-3"></div>
-                </div>
             </div>
 
-            <!-- 系統狀態與公告分頁 -->
-            <div id="tab-info" class="tab-pane hidden space-y-4">
-                <h2 class="text-base font-black text-slate-800 flex items-center gap-1.5"><i data-lucide="activity"
-                        class="w-4 h-4 text-indigo-500"></i> 系統狀態</h2>
-                <div class="glass p-5 rounded-3xl shadow-sm text-left space-y-3">
-                    <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">今日活動實況</p>
-                    <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl space-y-2">
-                        <h4 id="info-evname" class="font-extrabold text-sm text-slate-800">-</h4>
-                        <div class="flex gap-4 text-[10px] text-slate-500 font-bold">
-                            <span class="flex items-center gap-1"><i data-lucide="calendar"
-                                    class="w-3.5 h-3.5"></i><span id="info-evdate">-</span></span>
-                            <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i><span
-                                    id="info-evtime">-</span></span>
-                        </div>
-                        <div class="flex justify-between items-center pt-2 border-t border-indigo-100">
-                            <span class="text-[9px] font-black text-indigo-500 uppercase">授權碼</span>
-                            <span id="info-code"
-                                class="text-xs font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-lg">-</span>
-                        </div>
-                    </div>
+            <!-- 調查紀錄分頁 -->
+            <div id="tab-records" class="tab-pane hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-base font-black text-slate-800 flex items-center gap-1.5"><i
+                            data-lucide="clipboard-list" class="w-4 h-4 text-indigo-500"></i> 調查申報紀錄</h2>
+                    <button onclick="loadPastReports()"
+                        class="w-8 h-8 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 active:scale-95"><i
+                            data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
                 </div>
-                <div class="glass p-5 rounded-3xl shadow-sm text-left space-y-3">
-                    <div class="flex justify-between items-center">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">公告佈告欄</p>
-                        <span id="ann-time" class="text-[8px] font-bold text-slate-400">-</span>
-                    </div>
-                    <p id="ann-body"
-                        class="text-xs font-bold leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-2xl min-h-[60px] whitespace-pre-wrap">
-                        載入中...</p>
-                    <div id="ann-edit-panel" class="hidden space-y-3 pt-3 border-t border-slate-100">
-                        <p class="text-[9px] font-black text-amber-500 uppercase flex items-center gap-1"><i
-                                data-lucide="edit-3" class="w-3.5 h-3.5"></i> 修改公告（幹部權限）</p>
-                        <textarea id="ann-input" rows="3"
-                            class="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 outline-none text-xs font-semibold focus:border-indigo-400"></textarea>
-                        <button onclick="saveAnn()" id="btn-save-ann"
-                            class="w-full py-3 text-white font-black text-xs btn-ind rounded-2xl active:scale-95 shadow-md flex items-center justify-center gap-2"><i
-                                data-lucide="send" class="w-3.5 h-3.5"></i> 儲存並廣播推播</button>
-                    </div>
-                </div>
+                <div id="past-reports" class="space-y-3"></div>
             </div>
 
             <!-- 個人設定分頁 -->
@@ -421,18 +367,18 @@
         <div class="max-w-md mx-auto flex">
             <button onclick="switchTab('roster')" id="nav-roster"
                 class="nav-item flex-1 flex flex-col items-center py-2.5 text-slate-400 transition-all">
-                <i data-lucide="user-check" class="w-5 h-5 mb-0.5"></i>
-                <span class="text-[8px] font-black tracking-wider uppercase">考勤管理</span>
+                <i data-lucide="users" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[8px] font-black tracking-wider uppercase">組員管理</span>
             </button>
             <button onclick="switchTab('reports')" id="nav-reports"
                 class="nav-item flex-1 flex flex-col items-center py-2.5 text-slate-400 transition-all">
                 <i data-lucide="car" class="w-5 h-5 mb-0.5"></i>
                 <span class="text-[8px] font-black tracking-wider uppercase">交通用餐</span>
             </button>
-            <button onclick="switchTab('info')" id="nav-info"
+            <button onclick="switchTab('records')" id="nav-records"
                 class="nav-item flex-1 flex flex-col items-center py-2.5 text-slate-400 transition-all">
-                <i data-lucide="radar" class="w-5 h-5 mb-0.5"></i>
-                <span class="text-[8px] font-black tracking-wider uppercase">系統狀態</span>
+                <i data-lucide="clipboard-list" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[8px] font-black tracking-wider uppercase">調查紀錄</span>
             </button>
             <button onclick="switchTab('profile')" id="nav-profile"
                 class="nav-item flex-1 flex flex-col items-center py-2.5 text-slate-400 transition-all">
@@ -444,26 +390,24 @@
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxXYCpCifba8ltSrkSMJx9qF2_wNbSZN8Gm7VnOxFdc_p6PWPf8_0H4uQZ_37h2bupr/exec";
-        let curUser = null, activeEvent = null, staffRoster = [], selectedHelpers = [], cachedAttendance = [], selectedSurveyEvent = null;
+        let curUser = null, staffRoster = [], selectedHelpers = [], selectedSurveyEvent = null;
 
-        // 預設表單選項配置（可由幹部自訂並存入 LocalStorage）
-        let formConfig = {
-            transit: ['自行開車(請填寫下一題)', '去程搭車', '回程搭車'],
-            parking: ['需要汽車位', '需要機車位'],
-            meal: ['用餐', '不用餐/自備'],
-            snack: ['需要點心', '不用點心']
-        };
+        let customQuestions = [
+            { id: 'q_transit', title: '🚘 交通方式', type: 'checkbox', options: ['自行開車', '騎乘機車', '搭車/共乘'] },
+            { id: 'q_parking', title: '🅿️ 停車需求', type: 'checkbox', options: ['需要汽車位', '需要機車位'] },
+            { id: 'q_meal', title: '🍱 膳食調查', type: 'checkbox', options: ['便當(葷)', '便當(素)', '不用餐/自備'] },
+            { id: 'q_snack', title: '🍡 點心需求', type: 'radio', options: ['需要點心', '不用點心'] }
+        ];
 
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             const stored = localStorage.getItem('asst_user');
-            const savedCfg = localStorage.getItem('custom_form_config');
-            if (savedCfg) { try { formConfig = JSON.parse(savedCfg); } catch (e) { } }
+            const savedCustomQ = localStorage.getItem('custom_dynamic_questions');
+            if (savedCustomQ) { try { customQuestions = JSON.parse(savedCustomQ); } catch (e) { } }
             if (stored) { try { curUser = JSON.parse(stored); showDash(); } catch (e) { showLogin(); } }
             else showLogin();
         });
 
-        // 提示工具
         let toastTid = null;
         function showToast(msg, isErr = false) {
             const t = document.getElementById('toast'), ico = document.getElementById('toast-icon'), txt = document.getElementById('toast-msg');
@@ -476,14 +420,12 @@
             toastTid = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translate(-50%,-16px)'; t.style.pointerEvents = 'none'; }, 3000);
         }
 
-        // 按鈕載入狀態
         function setBtnLoading(btn, on, txt = '處理中...') {
             if (!btn) return;
             if (on) { btn.disabled = true; btn.dataset.orig = btn.innerHTML; btn.innerHTML = `<span class="flex items-center gap-2"><svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/><path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>${txt}</span>`; }
             else { btn.disabled = false; btn.innerHTML = btn.dataset.orig || btn.innerHTML; }
         }
 
-        // API 請求
         async function api(action, data) {
             try {
                 const r = await fetch(GAS_URL, { method: 'POST', mode: 'cors', cache: 'no-cache', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, data }) });
@@ -491,7 +433,6 @@
             } catch (e) { return { success: false, message: e.toString() }; }
         }
 
-        // 登入模式切換
         function setAuthMode(mode) {
             const isLogin = mode === 'login';
             document.getElementById('form-login').classList.toggle('hidden', !isLogin);
@@ -500,7 +441,6 @@
             document.getElementById('tab-register').className = `flex-1 py-2 rounded-xl text-xs font-black transition-all ${!isLogin ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`;
         }
 
-        // 登入
         async function handleLogin() {
             const email = document.getElementById('l-email').value.trim();
             const pass = document.getElementById('l-pass').value.trim();
@@ -518,7 +458,6 @@
             } else { showToast(res.message || '登入失敗', true); }
         }
 
-        // 註冊
         async function handleRegister() {
             const name = document.getElementById('r-name').value.trim();
             const email = document.getElementById('r-email').value.trim();
@@ -532,17 +471,14 @@
             else showToast(res.message || '申請失敗', true);
         }
 
-        // 登出
         function handleLogout() { localStorage.removeItem('asst_user'); curUser = null; showLogin(); showToast('已登出'); }
 
-        // 顯示登入畫面
         function showLogin() {
             document.getElementById('v-login').classList.remove('hidden');
             document.getElementById('v-dash').classList.add('hidden');
             document.getElementById('bottom-nav').classList.add('hidden');
         }
 
-        // 顯示主控台
         async function showDash() {
             document.getElementById('v-login').classList.add('hidden');
             document.getElementById('v-dash').classList.remove('hidden');
@@ -554,47 +490,90 @@
             const isAdmin = ['Admin'].includes(curUser.Role);
             const isOfficerOrAdmin = ['Admin', 'Officer'].includes(curUser.Role);
 
-            if (isOfficerOrAdmin) {
-                document.getElementById('ann-edit-panel').classList.remove('hidden');
-            }
-
-            // 嚴格限制：僅 Admin 可見自訂表單選項按鈕
             if (isAdmin) {
                 document.getElementById('btn-form-builder').classList.remove('hidden');
             }
 
             const filter = document.getElementById('roster-filter');
-            if (!isAdmin && curUser.Instrument) { filter.value = curUser.Instrument; filter.disabled = true; filter.classList.add('bg-slate-100', 'text-slate-400'); }
+            if (!isOfficerOrAdmin && curUser.Instrument) { filter.value = curUser.Instrument; filter.disabled = true; filter.classList.add('bg-slate-100', 'text-slate-400'); }
 
-            await syncStatus();
             await loadStaffRoster();
             switchTab('roster');
         }
 
-        // 表單建構器面板控制
         function openFormBuilder() {
-            document.getElementById('cfg-transit').value = formConfig.transit.join(', ');
-            document.getElementById('cfg-parking').value = formConfig.parking.join(', ');
-            document.getElementById('cfg-meal').value = formConfig.meal.join(', ');
-            document.getElementById('cfg-snack').value = (formConfig.snack || ['需要點心', '不用點心']).join(', ');
+            const container = document.getElementById('builder-questions-list');
+            container.innerHTML = customQuestions.map((q, idx) => `
+                <div class="bg-white/90 border border-slate-200 rounded-2xl p-3 space-y-2 text-left" data-qid="${q.id}">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-black text-indigo-600 uppercase">題目 #${idx + 1}</span>
+                        <button onclick="removeBuilderQuestion(${idx})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[8px] font-bold text-slate-400 uppercase">題目标題</label>
+                        <input type="text" class="q-title-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold" value="${q.title}">
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1 space-y-1">
+                            <label class="text-[8px] font-bold text-slate-400 uppercase">題型</label>
+                            <select class="q-type-select w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold">
+                                <option value="checkbox" ${q.type === 'checkbox' ? 'selected' : ''}>複選框 (Checkbox)</option>
+                                <option value="radio" ${q.type === 'radio' ? 'selected' : ''}>單選框 (Radio)</option>
+                                <option value="text" ${q.type === 'text' ? 'selected' : ''}>文字輸入 (Text)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-1 ${q.type === 'text' ? 'hidden' : ''}">
+                        <label class="text-[8px] font-bold text-slate-400 uppercase">選項 (逗號分隔)</label>
+                        <input type="text" class="q-options-input w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold" value="${(q.options || []).join(', ')}">
+                    </div>
+                </div>
+            `).join('');
             document.getElementById('form-builder-panel').classList.remove('hidden');
+            lucide.createIcons();
         }
+
         function closeFormBuilder() {
             document.getElementById('form-builder-panel').classList.add('hidden');
         }
-        function saveFormConfig() {
-            const tVal = document.getElementById('cfg-transit').value.split(',').map(s => s.trim()).filter(Boolean);
-            const pVal = document.getElementById('cfg-parking').value.split(',').map(s => s.trim()).filter(Boolean);
-            const mVal = document.getElementById('cfg-meal').value.split(',').map(s => s.trim()).filter(Boolean);
-            const sVal = document.getElementById('cfg-snack').value.split(',').map(s => s.trim()).filter(Boolean);
-            if (!tVal.length || !mVal.length) return showToast('交通與膳食選項不能為空', true);
-            formConfig = { transit: tVal, parking: pVal, meal: mVal, snack: sVal };
-            localStorage.setItem('custom_form_config', JSON.stringify(formConfig));
-            closeFormBuilder();
-            showToast('自訂表單選項已成功儲存！');
+
+        function addBuilderQuestion() {
+            customQuestions.push({
+                id: 'q_' + Date.now(),
+                title: '新題目',
+                type: 'checkbox',
+                options: ['選項A', '選項B']
+            });
+            openFormBuilder();
         }
 
-        // 分頁切換
+        function removeBuilderQuestion(idx) {
+            customQuestions.splice(idx, 1);
+            openFormBuilder();
+        }
+
+        function saveDynamicFormConfig() {
+            const container = document.getElementById('builder-questions-list');
+            const cards = container.querySelectorAll('[data-qid]');
+            const newQ = [];
+            cards.forEach((card, idx) => {
+                const title = card.querySelector('.q-title-input').value.trim() || `題目 ${idx + 1}`;
+                const type = card.querySelector('.q-type-select').value;
+                const optVal = card.querySelector('.q-options-input')?.value || '';
+                const options = optVal.split(',').map(s => s.trim()).filter(Boolean);
+                newQ.push({
+                    id: card.dataset.qid,
+                    title,
+                    type,
+                    options
+                });
+            });
+            customQuestions = newQ;
+            localStorage.setItem('custom_dynamic_questions', JSON.stringify(customQuestions));
+            closeFormBuilder();
+            showToast('自訂問卷題目與選項已成功儲存！');
+        }
+
         async function switchTab(tabId) {
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(el => { el.classList.remove('text-indigo-600'); });
@@ -604,23 +583,19 @@
             if (tabId === 'roster') loadRoster();
             if (tabId === 'reports') {
                 if (staffRoster.length === 0) { await loadStaffRoster(); }
-                buildHelperPicker(); loadSurveyEvents(); loadPastReports();
+                buildHelperPicker(); loadSurveyEvents();
             }
-            if (tabId === 'info') loadAnnouncement();
+            if (tabId === 'records') loadPastReports();
             if (tabId === 'profile') loadMyProfile();
         }
 
-        // ─── 個人設定頁面邏輯 ───
         async function loadMyProfile() {
             if (!curUser) return;
-            // 優先從已同步名冊中抓取自己最新之詳細個資 (電話、生日、身分證字號、個資同意)
             if (staffRoster.length === 0) { await loadStaffRoster(); }
             const myInfo = staffRoster.find(m => m.Email.toLowerCase() === curUser.Email.toLowerCase()) || curUser;
 
             document.getElementById('prof-name-email').innerText = `${myInfo.Name || curUser.Name} (${myInfo.Email || curUser.Email})`;
             document.getElementById('prof-section-inst').innerText = `${myInfo.Section || curUser.Section || '行政組'} / ${myInfo.Instrument || curUser.Instrument || '協助人員'}`;
-
-            // 帶入個資欄位
             document.getElementById('prof-phone').value = myInfo.Phone || '';
 
             let birthday = '';
@@ -631,9 +606,8 @@
             }
             document.getElementById('prof-birthday').value = birthday;
             document.getElementById('prof-id-number').value = myInfo.ID_Number || '';
-            document.getElementById('prof-password').value = ''; // 密碼欄位初始為空
+            document.getElementById('prof-password').value = '';
 
-            // 同意書狀態
             const consentStatusEl = document.getElementById('prof-consent-status');
             const consentChk = document.getElementById('prof-consent-chk');
 
@@ -653,30 +627,19 @@
         async function saveMyProfile() {
             if (!curUser) return;
             const btn = document.getElementById('btn-save-profile');
-
             const phone = document.getElementById('prof-phone').value.trim();
             const birthday = document.getElementById('prof-birthday').value.trim();
             const idNumber = document.getElementById('prof-id-number').value.trim().toUpperCase();
             const password = document.getElementById('prof-password').value.trim();
             const consentChk = document.getElementById('prof-consent-chk').checked;
-
             const privacyConsent = consentChk ? 'YES' : 'NO';
 
             setBtnLoading(btn, true, '正在儲存...');
-            const res = await api('saveMember', {
-                email: curUser.Email,
-                phone,
-                birthday,
-                idNumber,
-                password,
-                privacyConsent
-            });
+            const res = await api('saveMember', { email: curUser.Email, phone, birthday, idNumber, password, privacyConsent });
             setBtnLoading(btn, false);
 
             if (res.success) {
                 showToast('個人設定與同意書已儲存成功！');
-
-                // 本機快取更新
                 curUser.Phone = phone;
                 curUser.Birthday = birthday;
                 curUser.ID_Number = idNumber;
@@ -687,118 +650,45 @@
                     curUser.PrivacyConsent = 'NO';
                 }
                 localStorage.setItem('asst_user', JSON.stringify(curUser));
-
-                // 重新載入名冊快取，確保「交通與用餐調查」能自動帶入這次的更改
                 await loadStaffRoster();
-                loadMyProfile(); // 刷頁面顯示最新狀態
+                loadMyProfile();
             } else {
-                showToast(res.message || '儲存失敗，請重試', true);
+                showToast(res.message || '儲存失敗', true);
             }
         }
 
-        // 同步狀態
-        async function syncStatus() {
-            const res = await api('getSystemStatus', { email: curUser.Email });
-            if (res.success) {
-                activeEvent = { enabled: res.enabled, name: res.eventName || '未開啟', date: res.eventDate || '-', start: res.eventStart || '-', end: res.eventEnd || '-', code: res.bypassCode || '-' };
-                document.getElementById('info-evname').innerText = activeEvent.name;
-                document.getElementById('info-evdate').innerText = activeEvent.date;
-                document.getElementById('info-evtime').innerText = activeEvent.enabled ? `${activeEvent.start}~${activeEvent.end}` : '點名未開啟';
-                document.getElementById('info-code').innerText = activeEvent.code;
-                document.getElementById('step2-event-lbl').innerText = `${activeEvent.name}（${activeEvent.date}）`;
-            }
-        }
-
-        // 載入協助名冊
         async function loadStaffRoster() {
             const res = await api('getStaffList', {});
             if (res.success && Array.isArray(res.data)) { staffRoster = res.data; }
         }
 
-        // 載入出勤狀態
-        async function loadAttendance() {
-            const res = await api('getRealtimeStatus', { email: curUser.Email, includeStaff: true });
-            if (res.success && Array.isArray(res.data)) {
-                cachedAttendance = res.data;
-                staffRoster = staffRoster.map(m => {
-                    const att = res.data.find(a => a.Email === m.Email);
-                    return att ? { ...m, ...att } : { ...m, status: '尚未簽到', absenceCount: 0, leaveCount: 0 };
-                });
-            }
-        }
-
-        // 載入考勤分頁
         async function loadRoster() {
             const listEl = document.getElementById('roster-list');
             listEl.innerHTML = '<div class="py-8 text-center text-xs font-bold text-slate-400">同步中...</div>';
             await loadStaffRoster();
-            await loadAttendance();
             const group = document.getElementById('roster-filter').value;
             let list = group === 'all' ? staffRoster : staffRoster.filter(m => m.Instrument === group);
-            document.getElementById('roster-summary').classList.add('hidden');
             if (list.length === 0) { listEl.innerHTML = '<div class="py-8 text-center text-xs font-bold text-slate-400">此組別查無成員</div>'; return; }
-            const canCheckin = ['Admin', 'Officer', 'Leader'].includes(curUser.Role) || curUser.Section === '行政組';
+
             listEl.innerHTML = list.map(m => {
-                const sc = m.status === '已簽到' ? 'text-emerald-600 bg-emerald-50' : m.status === '請假' ? 'text-amber-600 bg-amber-50' : 'text-rose-500 bg-rose-50';
-                let btn = '';
                 const safeName = String(m.Name || '成員');
                 const safeEmail = String(m.Email || '');
-                const safeSection = String(m.Section || '行政組');
-                if (canCheckin && m.status !== '已簽到' && m.status !== '請假') {
-                    btn = `<button onclick="proxyCheckin('${safeEmail}','${safeName}','${safeSection}')" class="bg-indigo-600 text-white p-2 rounded-xl active:scale-95 transition-all"><i data-lucide="user-check" class="w-3.5 h-3.5"></i></button>`;
-                }
-                return `<div class="bg-white border border-slate-100 p-3.5 rounded-2xl flex justify-between items-center shadow-sm">
-      <div><p class="text-xs font-black text-slate-800">${safeName} <span class="text-[9px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded-md">${m.Instrument}</span></p>
-      <p class="text-[9px] text-slate-400 font-semibold mt-0.5">缺 ${m.absenceCount || 0} ・ 假 ${m.leaveCount || 0}</p></div>
-      <div class="flex items-center gap-2">
-        <span class="text-[10px] font-black px-2.5 py-1.5 rounded-xl ${sc}">${m.status}</span>${btn}
-      </div></div>`;
+                const safePhone = String(m.Phone || '未填');
+                const instrument = String(m.Instrument || '行政');
+                return `<div class="glass border border-slate-100 p-4 rounded-2xl flex justify-between items-center shadow-sm text-left">
+      <div>
+        <p class="text-xs font-black text-slate-800">${safeName} <span class="text-[9px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full ml-1">${instrument}</span></p>
+        <p class="text-[10px] text-slate-500 font-semibold mt-1">📧 ${safeEmail}</p>
+        <p class="text-[10px] text-slate-500 font-semibold">📞 ${safePhone}</p>
+      </div>
+      <div class="text-[9px] font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-xl">
+        ${m.Role || '成員'}
+      </div>
+    </div>`;
             }).join('');
-            renderRosterSummary(list);
             lucide.createIcons();
         }
 
-        function renderRosterSummary(list) {
-            const leaves = list.filter(m => m.status === '請假'), absent = list.filter(m => m.status === '缺席');
-            const box = document.getElementById('roster-summary');
-            if (!leaves.length && !absent.length) { box.classList.add('hidden'); return; }
-            box.innerHTML = `<div class="bg-indigo-50 border border-indigo-100 p-4 rounded-3xl text-left space-y-2 mb-1">
-    <div class="flex justify-between items-center"><p class="text-[9px] font-black text-indigo-500 uppercase">考勤彙整</p>
-    <div class="flex gap-1.5">
-      <button onclick="copySummary()" class="w-7 h-7 bg-white rounded-lg border border-slate-100 flex items-center justify-center text-slate-500 active:scale-95"><i data-lucide="copy" class="w-3 h-3"></i></button>
-      <button onclick="pushSummary()" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center active:scale-95"><i data-lucide="send" class="w-3 h-3"></i></button>
-    </div></div>
-    ${absent.length ? `<p class="text-[9px] font-bold text-rose-500">● 待簽到 (${absent.length})：${absent.map(m => m.Name).join('、')}</p>` : ''}
-    ${leaves.length ? `<p class="text-[9px] font-bold text-amber-500">● 請假 (${leaves.length})：${leaves.map(m => m.Name).join('、')}</p>` : ''}
-  </div>`;
-            box.classList.remove('hidden'); lucide.createIcons();
-        }
-
-        async function proxyCheckin(email, name, section) {
-            if (!activeEvent?.enabled) return showToast('點名系統未開啟，無法代簽', true);
-            if (!window.confirm(`確認為【${name}】辦理代簽到？`)) return;
-            const res = await api('submitCheckin', { email, name, section, eventName: activeEvent.name, date: activeEvent.date });
-            if (res.success) { showToast(`已為 ${name} 完成代簽到`); loadRoster(); }
-            else showToast(res.message || '代簽失敗', true);
-        }
-
-        function copySummary() {
-            const leaves = staffRoster.filter(m => m.status === '請假'), absent = staffRoster.filter(m => m.status === '缺席');
-            let txt = `【行政組考勤】\n`;
-            if (absent.length) txt += `待簽到：${absent.map(m => m.Name).join('、')}\n`;
-            if (leaves.length) txt += `請假：\n` + leaves.map(m => `・${m.Name}(${m.todayReason || '未填'})`).join('\n');
-            document.execCommand('copy') || navigator.clipboard?.writeText(txt);
-            showToast('已複製');
-        }
-
-        async function pushSummary() {
-            const leaves = staffRoster.filter(m => m.status === '請假'), absent = staffRoster.filter(m => m.status === '缺席');
-            let content = `缺席：${absent.map(m => m.Name).join('、') || '無'}\n請假：${leaves.map(m => m.Name).join('、') || '無'}`;
-            const res = await api('sendSummaryNotification', { type: '行政組考勤', content });
-            res?.success ? showToast('通知已發送') : showToast('發送失敗', true);
-        }
-
-        // 載入近期活動下拉選單
         async function loadSurveyEvents() {
             const sel = document.getElementById('survey-event-select');
             if (!sel) return;
@@ -807,13 +697,10 @@
                 const events = res.data;
                 sel.innerHTML = events.map(e => `<option value="${e.ID}" data-name="${e.Name}" data-date="${e.Date}">${e.Date} ${e.Name}</option>`).join('');
             } else {
-                sel.innerHTML = activeEvent?.name && activeEvent.name !== '未開啟'
-                    ? `<option value="active" data-name="${activeEvent.name}" data-date="${activeEvent.date}">${activeEvent.date} ${activeEvent.name}</option>`
-                    : '<option value="">（無近期活動，請手動聯絡幹部）</option>';
+                sel.innerHTML = '<option value="default" data-name="例行排練與演出" data-date="近期場次">近期場次例行排練與演出</option>';
             }
         }
 
-        // 精靈步驟 1：建構人員選取方塊 (依身分智慧篩選)
         function buildHelperPicker() {
             const container = document.getElementById('helper-picker');
             const titleEl = document.getElementById('helper-picker-title');
@@ -822,15 +709,12 @@
             const isAdminOrOfficer = ['Admin', 'Officer'].includes(curUser.Role);
             const isLeader = curUser.Role === 'Leader' || curUser.Role === '組長';
 
-            // 決定顯示的名單範圍
             let targetList = staffRoster;
             if (!isAdminOrOfficer) {
                 if (isLeader && curUser.Instrument) {
-                    // 組長：顯示自己組別的成員
                     targetList = staffRoster.filter(m => m.Instrument === curUser.Instrument);
                     titleEl.innerText = `請選擇 ${curUser.Instrument} 參與本次活動的組員（可多選）：`;
                 } else {
-                    // 一般組員：僅顯示自己
                     targetList = staffRoster.filter(m => m.Email.toLowerCase() === curUser.Email.toLowerCase());
                     if (targetList.length === 0) {
                         targetList = [{ Name: curUser.Name, Email: curUser.Email, Instrument: curUser.Instrument || '行政' }];
@@ -841,7 +725,6 @@
                 titleEl.innerText = '請選擇參與本次活動的協助人員（可多選）：';
             }
 
-            // 預設自動勾選當前登入者（或若僅有一人則自動全選）
             selectedHelpers = targetList.map(m => m.Email);
 
             container.innerHTML = targetList.map(m => {
@@ -876,7 +759,6 @@
             }
         }
 
-        // 前往步驟 2
         function goToStep2() {
             if (selectedHelpers.length === 0) return showToast('請至少選取一位協助人員', true);
             const evSel = document.getElementById('survey-event-select');
@@ -884,7 +766,7 @@
             if (!selOpt || !selOpt.value) return showToast('請先選擇活動場次', true);
             selectedSurveyEvent = {
                 name: selOpt.dataset.name || selOpt.text,
-                date: selOpt.dataset.date || ''
+                date: selOpt.dataset.date || new Date().toISOString().substring(0, 10)
             };
             document.getElementById('step2-event-lbl').innerText = `${selectedSurveyEvent.name}（${selectedSurveyEvent.date}）`;
             const sel = staffRoster.length > 0 ? staffRoster.filter(m => selectedHelpers.includes(m.Email)) : selectedHelpers.map(e => ({ Email: e, Name: curUser.Name, Instrument: curUser.Instrument }));
@@ -892,7 +774,6 @@
             container.innerHTML = sel.map(m => buildPersonForm(m)).join('');
             document.getElementById('wizard-step1').classList.add('hidden');
             document.getElementById('wizard-step2').classList.remove('hidden');
-            document.getElementById('wizard-history').classList.add('hidden');
             setStepVisual(2);
             lucide.createIcons();
         }
@@ -905,31 +786,33 @@
             const phone = m.Phone || '';
             const birthday = m.Birthday ? (m.Birthday instanceof Date ? m.Birthday.toISOString().substring(0, 10) : String(m.Birthday).substring(0, 10)) : '';
             const idNumber = m.ID_Number || '';
+            const emailKey = m.Email.replace(/[@.]/g, '_');
 
-            const transitChecks = formConfig.transit.map((mode) => `
-                <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-600">
-                    <input type="checkbox" name="transit_${m.Email.replace(/[@.]/g, '_')}" value="${mode}" class="accent-indigo-600 w-4 h-4 rounded"> ${mode}
-                </label>
-            `).join('');
+            const dynamicQuestionsHTML = customQuestions.map(q => {
+                let inputsHTML = '';
+                if (q.type === 'checkbox') {
+                    inputsHTML = `<div class="flex flex-wrap gap-4 pt-0.5">` + (q.options || []).map(opt => `
+                        <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-600">
+                            <input type="checkbox" name="dyn_${q.id}_${emailKey}" value="${opt}" class="accent-indigo-600 w-4 h-4 rounded"> ${opt}
+                        </label>
+                    `).join('') + `</div>`;
+                } else if (q.type === 'radio') {
+                    inputsHTML = `<div class="grid grid-cols-2 gap-2">` + (q.options || []).map((opt, i) => `
+                        <label class="flex-1 text-center py-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer text-[10px] font-black text-slate-600 hover:bg-amber-50 hover:border-amber-300 transition-all has-[:checked]:bg-amber-600 has-[:checked]:text-white has-[:checked]:border-amber-600">
+                            <input type="radio" name="dyn_${q.id}_${emailKey}" value="${opt}" ${i === 0 ? 'checked' : ''} class="sr-only">
+                            ${opt}
+                        </label>
+                    `).join('') + `</div>`;
+                } else if (q.type === 'text') {
+                    inputsHTML = `<input type="text" name="dyn_${q.id}_${emailKey}" placeholder="請填寫..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none text-xs font-semibold focus:border-indigo-400 transition-all">`;
+                }
 
-            const parkingChecks = formConfig.parking.map((pk) => `
-                <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-600">
-                    <input type="checkbox" name="parking_${m.Email.replace(/[@.]/g, '_')}" value="${pk}" class="accent-indigo-600 w-4 h-4 rounded"> ${pk}
-                </label>
-            `).join('');
-
-            const mealChecks = formConfig.meal.map((meal) => `
-                <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-600">
-                    <input type="checkbox" name="meal_${m.Email.replace(/[@.]/g, '_')}" value="${meal}" class="accent-emerald-600 w-4 h-4 rounded"> ${meal}
-                </label>
-            `).join('');
-
-            const snackRadios = (formConfig.snack || ['需要點心', '不用點心']).map((snack, i) => `
-                <label class="flex-1 text-center py-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer text-[10px] font-black text-slate-600 hover:bg-amber-50 hover:border-amber-300 transition-all has-[:checked]:bg-amber-600 has-[:checked]:text-white has-[:checked]:border-amber-600">
-                    <input type="radio" name="snack_${m.Email.replace(/[@.]/g, '_')}" value="${snack}" ${i === 0 ? 'checked' : ''} class="sr-only">
-                    ${snack}
-                </label>
-            `).join('');
+                return `
+                <div class="space-y-1.5 text-left" data-qid="${q.id}">
+                    <label class="text-[9px] font-black text-slate-400 uppercase">${q.title}</label>
+                    ${inputsHTML}
+                </div>`;
+            }).join('');
 
             return `<div class="glass p-4 rounded-3xl shadow-sm border-l-4 ${borderCls} space-y-3.5" data-email="${m.Email}" data-name="${safeName}" data-instrument="${m.Instrument || '行政'}">
     <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -937,28 +820,7 @@
       <div><p class="text-xs font-black text-slate-800">${safeName}</p><p class="text-[9px] font-bold text-slate-400">${m.Instrument || '行政'} ・ ${m.Email}</p></div>
     </div>
     
-    <div class="space-y-1.5 text-left">
-      <label class="text-[9px] font-black text-slate-400 uppercase">🚘 交通方式 (可複選)</label>
-      <div class="flex flex-wrap gap-4 pt-0.5">${transitChecks}</div>
-    </div>
-
-    <div class="space-y-1.5 text-left">
-      <label class="text-[9px] font-black text-slate-400 uppercase">🅿️ 停車需求 / 自行前往 (車牌號碼)</label>
-      <div class="flex flex-col gap-2 pt-0.5">
-        ${parkingChecks ? `<div class="flex flex-wrap gap-4">${parkingChecks}</div>` : ''}
-        <input type="text" name="carPlate" placeholder="自行前往 - 車牌號碼 (司機填寫，如: ABC-1234)" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 outline-none text-xs font-semibold focus:border-indigo-400 transition-all uppercase">
-      </div>
-    </div>
-
-    <div class="space-y-1.5 text-left">
-      <label class="text-[9px] font-black text-slate-400 uppercase">🍱 膳食調查 (可複選)</label>
-      <div class="flex flex-wrap gap-4 pt-0.5">${mealChecks}</div>
-    </div>
-
-    <div class="space-y-1.5 text-left">
-      <label class="text-[9px] font-black text-slate-400 uppercase">🍡 點心需求 (單選)</label>
-      <div class="grid grid-cols-2 gap-2">${snackRadios}</div>
-    </div>
+    ${dynamicQuestionsHTML}
 
     <div class="grid grid-cols-2 gap-2 text-left">
       <div class="space-y-1">
@@ -982,43 +844,51 @@
   </div>`;
         }
 
-        // 批次送出調查
         async function handleBatchSubmit() {
             if (!selectedSurveyEvent?.name) return showToast('請先返回步驟一並選擇活動場次', true);
             const forms = document.querySelectorAll('#person-forms > div[data-email]');
             const replies = [];
             for (const f of forms) {
                 const email = f.dataset.email, name = f.dataset.name;
-                const transitList = Array.from(f.querySelectorAll(`input[name="transit_${email.replace(/[@.]/g, '_')}"]:checked`)).map(el => el.value);
-                const transitStr = transitList.join('、') || '未選擇';
+                const emailKey = email.replace(/[@.]/g, '_');
 
-                const mealList = Array.from(f.querySelectorAll(`input[name="meal_${email.replace(/[@.]/g, '_')}"]:checked`)).map(el => el.value);
-                const mealStr = mealList.join('、') || '未選擇';
+                let transitSummary = [];
+                let parkingSummary = [];
+                let mealSummary = [];
+                let otherAnswers = [];
 
-                const snackEl = f.querySelector(`input[name="snack_${email.replace(/[@.]/g, '_')}"]:checked`);
-                const snackStr = snackEl ? snackEl.value : '未選擇';
-
-                const plateEl = f.querySelector('input[name="carPlate"]');
-                const plateVal = plateEl ? plateEl.value.trim().toUpperCase() : '';
+                customQuestions.forEach(q => {
+                    const inputs = f.querySelectorAll(`[name="dyn_${q.id}_${emailKey}"]`);
+                    if (q.type === 'checkbox') {
+                        const checked = Array.from(inputs).filter(i => i.checked).map(i => i.value);
+                        const val = checked.join('、') || '未填';
+                        if (q.title.includes('交通')) transitSummary.push(val);
+                        else if (q.title.includes('停車')) parkingSummary.push(val);
+                        else if (q.title.includes('膳食') || q.title.includes('用餐')) mealSummary.push(val);
+                        else otherAnswers.push(`${q.title}: ${val}`);
+                    } else if (q.type === 'radio') {
+                        const checked = Array.from(inputs).find(i => i.checked);
+                        const val = checked ? checked.value : '未填';
+                        if (q.title.includes('膳食') || q.title.includes('用餐')) mealSummary.push(val);
+                        else if (q.title.includes('點心')) mealSummary.push(`點心:${val}`);
+                        else otherAnswers.push(`${q.title}: ${val}`);
+                    } else if (q.type === 'text') {
+                        const val = inputs[0] ? inputs[0].value.trim() : '';
+                        if (val) otherAnswers.push(`${q.title}: ${val}`);
+                    }
+                });
 
                 const phoneEl = f.querySelector('input[name="phone"]');
                 const birthdayEl = f.querySelector('input[name="birthday"]');
                 const idNumberEl = f.querySelector('input[name="idNumber"]');
                 const notesEl = f.querySelector('textarea[name="notes"]');
 
-                const parkingList = Array.from(f.querySelectorAll(`input[name="parking_${email.replace(/[@.]/g, '_')}"]:checked`)).map(el => el.value);
-                let parkingStr = parkingList.join('、');
-                if (plateVal) {
-                    parkingStr = parkingStr ? `${parkingStr} (車牌: ${plateVal})` : `車牌: ${plateVal}`;
-                }
-                parkingStr = parkingStr || '不需要';
-
                 replies.push({
                     email,
                     name,
-                    transit: transitStr,
-                    parking: parkingStr,
-                    meal: `${mealStr} / 點心:${snackStr}`,
+                    transit: transitSummary.join(' / ') || '無',
+                    parking: parkingSummary.join(' / ') || '無',
+                    meal: mealSummary.join(' / ') + (otherAnswers.length ? ' | ' + otherAnswers.join(', ') : ''),
                     phone: phoneEl ? phoneEl.value.trim() : '',
                     birthday: birthdayEl ? birthdayEl.value.trim() : '',
                     idNumber: idNumberEl ? idNumberEl.value.trim().toUpperCase() : '',
@@ -1054,14 +924,12 @@
             document.getElementById('wizard-step1').classList.remove('hidden');
             document.getElementById('wizard-step2').classList.add('hidden');
             document.getElementById('wizard-step3').classList.add('hidden');
-            document.getElementById('wizard-history').classList.remove('hidden');
-            buildHelperPicker(); loadPastReports(); setStepVisual(1);
+            buildHelperPicker(); setStepVisual(1);
         }
 
         function backToStep1() {
             document.getElementById('wizard-step2').classList.add('hidden');
             document.getElementById('wizard-step1').classList.remove('hidden');
-            document.getElementById('wizard-history').classList.remove('hidden');
             setStepVisual(1);
         }
 
@@ -1078,17 +946,16 @@
             document.getElementById('step-label').innerText = labels[step - 1] || '';
         }
 
-        // 載入歷史紀錄
         async function loadPastReports() {
             const listEl = document.getElementById('past-reports');
-            listEl.innerHTML = '<div class="py-4 text-center text-xs text-slate-400 font-bold">載入中...</div>';
+            listEl.innerHTML = '<div class="py-8 text-center text-xs text-slate-400 font-bold">載入中...</div>';
             const roleType = curUser.Instrument || 'all';
             const res = await api('getStaffReports', { roleType: ['Admin', 'Officer'].includes(curUser.Role) ? 'all' : roleType });
             if (res.success && res.data?.length > 0) {
-                listEl.innerHTML = res.data.slice(0, 15).map(l => {
+                listEl.innerHTML = res.data.slice(0, 30).map(l => {
                     const transitBadge = l.transit.includes('自行開車') ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500';
                     const mealBadge = l.meal.includes('素') ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600';
-                    return `<div class="bg-white/80 border border-slate-100 p-4 rounded-2xl shadow-sm text-left space-y-1.5">
+                    return `<div class="glass border border-slate-100 p-4 rounded-2xl shadow-sm text-left space-y-1.5">
         <div class="flex justify-between items-start">
           <div><p class="text-xs font-black text-slate-800">${l.eventName}</p><p class="text-[8px] font-bold text-slate-400">${l.date} · 登記人: ${l.fillerName}</p></div>
           <span class="text-[8px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 shrink-0">${l.roleType}</span>
@@ -1101,36 +968,17 @@
           </div>
         </div>
         <div class="text-[9px] font-bold text-slate-500 space-y-0.5 border-t border-dashed border-slate-100 pt-1.5 mt-1.5">
-          <p>● 停車/車牌: ${l.parking || '無'}</p>
+          <p>● 停車/其他: ${l.parking || '無'}</p>
           ${l.notes ? `<p>● 備註: <span class="text-rose-500">${l.notes}</span></p>` : ''}
         </div>
       </div>`;
                 }).join('');
                 lucide.createIcons();
             } else if (res.success) {
-                listEl.innerHTML = '<div class="py-6 text-center text-xs text-slate-400 font-bold bg-white/30 rounded-3xl">尚無登記紀錄</div>';
+                listEl.innerHTML = '<div class="py-12 text-center text-xs text-slate-400 font-bold bg-white/40 rounded-3xl">尚無調查申報紀錄</div>';
             } else {
-                listEl.innerHTML = `<div class="py-4 text-center text-xs text-rose-500 font-bold">載入失敗</div>`;
+                listEl.innerHTML = `<div class="py-8 text-center text-xs text-rose-500 font-bold">載入失敗</div>`;
             }
-        }
-
-        // 載入與儲存公告
-        async function loadAnnouncement() {
-            const res = await api('getAnnouncement');
-            if (res.success) {
-                document.getElementById('ann-body').innerText = res.content || '暫無公告。';
-                document.getElementById('ann-time').innerText = res.updateTime || '-';
-                const inp = document.getElementById('ann-input');
-                if (inp) inp.value = res.content || '';
-            }
-        }
-        async function saveAnn() {
-            const val = document.getElementById('ann-input').value.trim();
-            if (!val) return showToast('公告不能為空', true);
-            const btn = document.getElementById('btn-save-ann'); setBtnLoading(btn, true, '發送中...');
-            const res = await api('saveAnnouncement', { content: val });
-            setBtnLoading(btn, false);
-            res.success ? (showToast('公告發布，推播已送出'), loadAnnouncement()) : showToast('發布失敗', true);
         }
     </script>
 </body>
