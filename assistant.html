@@ -254,6 +254,8 @@
                         <input type="date" id="survey-event-date"
                             class="w-full px-4 py-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm font-bold focus:border-indigo-400 transition-all">
                     </div>
+                    <p id="event-readonly-hint" class="hidden text-[9px] font-bold text-amber-500 text-left">ℹ️
+                        活動場次由管理員設定，僅可檢視</p>
                     <p id="helper-picker-title" class="text-xs font-bold text-slate-500 text-left">請選擇參與本次活動的協助人員（可多選）：
                     </p>
                     <div id="helper-picker" class="grid grid-cols-2 gap-2.5"></div>
@@ -524,6 +526,24 @@
 
             if (isAdmin) {
                 document.getElementById('btn-form-builder').classList.remove('hidden');
+                // Admin 修改活動場次時自動存入 localStorage
+                const evNameEl = document.getElementById('survey-event-name');
+                const evDateEl = document.getElementById('survey-event-date');
+                evNameEl.addEventListener('change', () => {
+                    localStorage.setItem('admin_event_name', evNameEl.value.trim());
+                });
+                evDateEl.addEventListener('change', () => {
+                    localStorage.setItem('admin_event_date', evDateEl.value.trim());
+                });
+            } else {
+                // 非 Admin：鎖定活動名稱與日期為唯讀
+                const evNameEl = document.getElementById('survey-event-name');
+                const evDateEl = document.getElementById('survey-event-date');
+                evNameEl.readOnly = true;
+                evDateEl.readOnly = true;
+                evNameEl.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
+                evDateEl.classList.add('bg-slate-100', 'text-slate-500', 'cursor-not-allowed');
+                document.getElementById('event-readonly-hint').classList.remove('hidden');
             }
 
             const filter = document.getElementById('roster-filter');
@@ -753,8 +773,18 @@
         }
 
         function loadSurveyEvents() {
+            const nameInput = document.getElementById('survey-event-name');
             const dateInput = document.getElementById('survey-event-date');
-            if (dateInput) dateInput.value = new Date().toISOString().substring(0, 10);
+            const isAdmin = curUser && curUser.Role === 'Admin';
+            const savedName = localStorage.getItem('admin_event_name') || '';
+            const savedDate = localStorage.getItem('admin_event_date') || new Date().toISOString().substring(0, 10);
+            if (isAdmin) {
+                nameInput.value = savedName;
+                dateInput.value = savedDate;
+            } else {
+                nameInput.value = savedName || '尚未設定';
+                dateInput.value = savedDate;
+            }
         }
 
         function buildHelperPicker() {
