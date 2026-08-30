@@ -795,7 +795,13 @@ function getEventConfig() {
         const sysS = SS.getSheetByName("SystemConfig");
         if (sysS.getLastColumn() < 15) return { success: true, eventName: '', eventDate: '' };
         const row = sysS.getRange(2, 14, 1, 2).getValues()[0];
-        return { success: true, eventName: String(row[0] || ''), eventDate: String(row[1] || '') };
+        let dateVal = row[1];
+        if (dateVal instanceof Date) {
+            dateVal = Utilities.formatDate(dateVal, "GMT+8", "yyyy-MM-dd");
+        } else {
+            dateVal = String(dateVal || '');
+        }
+        return { success: true, eventName: String(row[0] || ''), eventDate: dateVal };
     } catch (e) {
         return { success: false, message: e.toString() };
     }
