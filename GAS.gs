@@ -37,6 +37,8 @@ function doPost(e) {
             case 'testPush': result = testPush(data); break;
             case 'getStaffList': result = getStaffList(); break;
             case 'getUpcomingEvents': result = getUpcomingEvents(); break;
+            case 'saveEventConfig': result = saveEventConfig(data); break;
+            case 'getEventConfig': result = getEventConfig(); break;
             case 'submitLeave': result = submitLeave(data); break;
             case 'submitPerformance': result = submitPerformance(data); break;
             case 'getPerformances': result = getPerformances(data); break;
@@ -767,11 +769,33 @@ function saveSystemSetting(data) {
         const value = String(data.value);
 
         if (key === 'bypassCode') {
-            // 將授權碼保存在 M 欄 (第 13 欄)
             sysS.getRange(2, 13).setValue(value);
             return { success: true };
         }
         return { success: false, message: "無效的設定鍵值" };
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+
+function saveEventConfig(data) {
+    try {
+        const sysS = SS.getSheetByName("SystemConfig");
+        if (sysS.getLastColumn() < 15) sysS.insertColumnsAfter(sysS.getLastColumn(), 15 - sysS.getLastColumn());
+        sysS.getRange(2, 14).setValue(String(data.eventName || ''));
+        sysS.getRange(2, 15).setValue(String(data.eventDate || ''));
+        return { success: true };
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+
+function getEventConfig() {
+    try {
+        const sysS = SS.getSheetByName("SystemConfig");
+        if (sysS.getLastColumn() < 15) return { success: true, eventName: '', eventDate: '' };
+        const row = sysS.getRange(2, 14, 1, 2).getValues()[0];
+        return { success: true, eventName: String(row[0] || ''), eventDate: String(row[1] || '') };
     } catch (e) {
         return { success: false, message: e.toString() };
     }

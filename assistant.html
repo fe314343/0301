@@ -526,15 +526,18 @@
 
             if (isAdmin) {
                 document.getElementById('btn-form-builder').classList.remove('hidden');
-                // Admin 修改活動場次時自動存入 localStorage
+                // Admin 修改活動場次時自動同步至後端與本地
                 const evNameEl = document.getElementById('survey-event-name');
                 const evDateEl = document.getElementById('survey-event-date');
-                evNameEl.addEventListener('change', () => {
-                    localStorage.setItem('admin_event_name', evNameEl.value.trim());
-                });
-                evDateEl.addEventListener('change', () => {
-                    localStorage.setItem('admin_event_date', evDateEl.value.trim());
-                });
+                async function syncEvent() {
+                    const eventName = evNameEl.value.trim();
+                    const eventDate = evDateEl.value.trim();
+                    localStorage.setItem('admin_event_name', eventName);
+                    localStorage.setItem('admin_event_date', eventDate);
+                    await api('saveEventConfig', { eventName, eventDate });
+                }
+                evNameEl.addEventListener('change', syncEvent);
+                evDateEl.addEventListener('change', syncEvent);
             } else {
                 // 非 Admin：鎖定活動名稱與日期為唯讀
                 const evNameEl = document.getElementById('survey-event-name');
@@ -772,18 +775,31 @@
             lucide.createIcons();
         }
 
-        function loadSurveyEvents() {
+        async function loadSurveyEvents() {
             const nameInput = document.getElementById('survey-event-name');
             const dateInput = document.getElementById('survey-event-date');
-            const isAdmin = curUser && curUser.Role === 'Admin';
-            const savedName = localStorage.getItem('admin_event_name') || '';
-            const savedDate = localStorage.getItem('admin_event_date') || new Date().toISOString().substring(0, 10);
-            if (isAdmin) {
-                nameInput.value = savedName;
-                dateInput.value = savedDate;
-            } else {
-                nameInput.value = savedName || '尚未設定';
-                dateInput.value = savedDate;
+
+            // 先嘗試從本地暫存載入頁面，加速顯示
+            const localName = localStorage.getItem('admin_event_name') || '';
+            const localDate = localStorage.getItem('admin_event_date') || new Date().toISOString().substring(0, 10);
+            if (nameInput) nameInput.value = localName || (curUser && curUser.Role === 'Admin' ? '' : '讀取中...');
+            if (dateInput) dateInput.value = localDate;
+
+            // 從後端拉取最新設定
+            const res = await api('getEventConfig', {});
+            if (res.success) {
+                const eventName = res.eventName || '';
+                const eventDate = res.eventDate || new Date().toISOString().substring(0, 10);
+
+                localStorage.setItem('admin_event_name', eventName);
+                localStorage.setItem('admin_event_date', eventDate);
+
+                if (nameInput) {
+                    nameInput.value = eventName || (curUser && curUser.Role === 'Admin' ? '' : '尚未設定');
+                }
+                if (dateInput) {
+                    dateInput.value = eventDate;
+                }
             }
         }
 
