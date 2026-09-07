@@ -1497,6 +1497,26 @@
             if (!select || !select.value) return showToast("請選擇請假活動", true);
 
             const [eventName, eventDate] = select.value.split('|');
+
+            // 檢查活動當天 14:30 截止請假時間
+            if (eventDate) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+
+                if (eventDate < todayStr) {
+                    return showToast("該場次活動日期已過，無法辦理線上請假", true);
+                } else if (eventDate === todayStr) {
+                    const hours = now.getHours();
+                    const minutes = now.getMinutes();
+                    if (hours > 14 || (hours === 14 && minutes >= 30)) {
+                        return showToast("活動當天 14:30 後已截止請假申請", true);
+                    }
+                }
+            }
+
             const reason = reasonInput ? reasonInput.value.trim() : "";
             const btn = document.getElementById('leave-submit-btn');
             setBtnLoading(btn, true, "送出中...");
@@ -3312,7 +3332,8 @@
                 <i data-lucide="calendar-off" class="w-8 h-8"></i>
             </div>
             <h3 class="text-xl font-[900] text-slate-800 tracking-tight mb-2">請假申請</h3>
-            <p class="text-xs font-bold text-slate-500 mb-6">請選擇您要請假的活動，送出後不列入缺席紀錄。</p>
+            <p class="text-xs font-bold text-slate-500 mb-6">請選擇您要請假的活動，送出後不列入缺席紀錄。<br><span
+                    class="text-amber-600 font-extrabold text-[11px] mt-1 block">⚠️ 活動當天 14:30 後即截止請假</span></p>
 
             <div class="space-y-4 mb-6 text-left">
                 <div>

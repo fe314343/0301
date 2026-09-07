@@ -856,6 +856,20 @@ function submitCheckin(data) {
 
 function submitLeave(data) {
     try {
+        if (!data.date) return { success: false, message: "未指定活動日期" };
+
+        const now = new Date();
+        const todayStr = Utilities.formatDate(now, "GMT+8", "yyyy-MM-dd");
+        const currentHM = Number(Utilities.formatDate(now, "GMT+8", "HHmm"));
+        const eventDateStr = String(data.date).trim();
+
+        if (eventDateStr < todayStr) {
+            return { success: false, message: "該場次活動日期已過，無法辦理線上請假" };
+        }
+        if (eventDateStr === todayStr && currentHM >= 1430) {
+            return { success: false, message: "活動當天 14:30 後已截止請假申請" };
+        }
+
         SS.getSheetByName("Attendance").appendRow([
             new Date(), 
             data.name, 
