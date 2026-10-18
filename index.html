@@ -1585,14 +1585,15 @@
                     listEl.innerHTML = '<div class="text-xs text-rose-400 text-center py-3">無法取得組員名單</div>';
                     return;
                 }
-                // 只保留同組、且不是自己的成員
-                const mySection = currentUser.Section;
+                // Admin/Officer 顯示全部成員，Leader 僅同組
+                const isAdmin = ['Admin', 'Officer'].includes(currentUser.Role);
                 const myEmail = (currentUser.Email || '').toLowerCase().trim();
-                const sectionMembers = res.data.filter(m =>
-                    m.Section === mySection && m.Email.toLowerCase().trim() !== myEmail
-                );
+                const sectionMembers = res.data.filter(m => {
+                    if (m.Email.toLowerCase().trim() === myEmail) return false; // 排除自己
+                    return isAdmin ? true : m.Section === currentUser.Section;
+                });
                 if (sectionMembers.length === 0) {
-                    listEl.innerHTML = '<div class="text-xs text-slate-400 text-center py-3">本組目前無其他成員</div>';
+                    listEl.innerHTML = '<div class="text-xs text-slate-400 text-center py-3">目前無可選成員</div>';
                     return;
                 }
                 listEl.innerHTML = sectionMembers.map(m => `
