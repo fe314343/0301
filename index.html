@@ -1463,6 +1463,12 @@
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
                 loadLeaveEvents();
+                // 顯示 / 隱藏分頁切換列（僅 Leader / Admin / Officer 可見）
+                const isPrivileged = currentUser && ['Leader', 'Admin', 'Officer'].includes(currentUser.Role);
+                const tabBar = document.getElementById('leave-tab-bar');
+                if (tabBar) tabBar.classList.toggle('hidden', !isPrivileged);
+                // 預設回到「本人請假」分頁
+                switchLeaveTab('self');
                 safeCreateIcons();
             }
         }
@@ -1541,6 +1547,115 @@
                 showToast("連線異常", true);
             } finally {
                 setBtnLoading(btn, false, "送出請假");
+            }
+        }
+
+        // ====== 代組員請假功能 ======
+        function switchLeaveTab(tab) {
+            const selfPanel = document.getElementById('leave-self-panel');
+            const proxyPanel = document.getElementById('leave-proxy-panel');
+            const btnSelf = document.getElementById('leave-tab-self');
+            const btnProxy = document.getElementById('leave-tab-proxy');
+            const submitBtn = document.getElementById('leave-submit-btn');
+            if (!selfPanel || !proxyPanel) return;
+
+            if (tab === 'self') {
+                selfPanel.classList.remove('hidden');
+                proxyPanel.classList.add('hidden');
+                if (btnSelf) { btnSelf.classList.add('bg-white', 'text-amber-600', 'shadow-sm'); btnSelf.classList.remove('text-slate-400'); }
+                if (btnProxy) { btnProxy.classList.remove('bg-white', 'text-amber-600', 'shadow-sm'); btnProxy.classList.add('text-slate-400'); }
+                if (submitBtn) { submitBtn.onclick = submitLeaveApp; submitBtn.innerText = '送出請假'; }
+            } else {
+                selfPanel.classList.add('hidden');
+                proxyPanel.classList.remove('hidden');
+                if (btnProxy) { btnProxy.classList.add('bg-white', 'text-amber-600', 'shadow-sm'); btnProxy.classList.remove('text-slate-400'); }
+                if (btnSelf) { btnSelf.classList.remove('bg-white', 'text-amber-600', 'shadow-sm'); btnSelf.classList.add('text-slate-400'); }
+                if (submitBtn) { submitBtn.onclick = submitLeaveOnBehalf; submitBtn.innerText = '代為請假'; }
+                loadSectionMembersForLeave();
+            }
+        }
+
+        async function loadSectionMembersForLeave() {
+            const listEl = document.getElementById('proxy-member-list');
+            if (!listEl) return;
+            listEl.innerHTML = '<div class="text-xs text-slate-400 text-center py-3">組員載入中...</div>';
+            try {
+                const res = await callBackend('getMemberListForDelegation', {});
+                if (!res?.success || !res.data || res.data.length === 0) {
+                    listEl.innerHTML = '<div class="text-xs text-rose-400 text-center py-3">無法取得組員名單</div>';
+                    return;
+                }
+                // 只保留同組、且不是自己的成員
+                const mySection = currentUser.Section;
+                const myEmail = (currentUser.Email || '').toLowerCase().trim();
+                const sectionMembers = res.data.filter(m =>
+                    m.Section === mySection && m.Email.toLowerCase().trim() !== myEmail
+                );
+                if (sectionMembers.length === 0) {
+                    listEl.innerHTML = '<div class="text-xs text-slate-400 text-center py-3">本組目前無其他成員</div>';
+                    return;
+                }
+                listEl.innerHTML = sectionMembers.map(m => `
+                    <label class="flex items-center gap-3 p-3 rounded-2xl cursor-pointer hover:bg-amber-50 transition-all">
+                        <input type="radio" name="proxy-member" class="accent-amber-500 w-4 h-4 shrink-0"
+                            data-name="${m.Name}" data-email="${m.Email}" data-section="${m.Section}">
+                        <span class="text-sm font-bold text-slate-700">${m.Name}</span>
+                        <span class="text-[10px] text-slate-400 font-bold">${m.Instrument || ''}</span>
+                    </label>
+                `).join('');
+            } catch (e) {
+                listEl.innerHTML = '<div class="text-xs text-rose-400 text-center py-3">連線異常</div>';
+            }
+        }
+
+        async function submitLeaveOnBehalf() {
+            // 取得被選組員
+            const selectedRadio = document.querySelector('input[name="proxy-member"]:checked');
+            if (!selectedRadio) return showToast('請先選擇要代為請假的組員', true);
+
+            const memberName = selectedRadio.dataset.name;
+            const memberEmail = selectedRadio.dataset.email;
+            const memberSection = selectedRadio.dataset.section;
+
+            // 取得活動（與本人請假共用同一個下拉）
+            const select = document.getElementById('leave-event-select');
+            if (!select || !select.value) return showToast('請選擇請假活動', true);
+            const [eventName, eventDate] = select.value.split('|');
+
+            // 截止時間驗證
+            if (eventDate) {
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                if (eventDate < todayStr) return showToast('該場次活動日期已過，無法辦理線上請假', true);
+                if (eventDate === todayStr && (now.getHours() > 14 || (now.getHours() === 14 && now.getMinutes() >= 30))) {
+                    return showToast('活動當天 14:30 後已截止請假申請', true);
+                }
+            }
+
+            const reason = document.getElementById('proxy-reason')?.value.trim() || '';
+            const btn = document.getElementById('leave-submit-btn');
+            setBtnLoading(btn, true, '送出中...');
+            try {
+                const res = await callBackend('submitLeave', {
+                    email: memberEmail,
+                    name: memberName,
+                    section: memberSection,
+                    eventName: eventName,
+                    date: eventDate,
+                    reason: reason ? `[組長代請假] ${reason}` : '[組長代請假]'
+                });
+                if (res?.success) {
+                    showToast(`已代 ${memberName} 送出請假`);
+                    document.getElementById('proxy-reason').value = '';
+                    document.querySelectorAll('input[name="proxy-member"]').forEach(r => r.checked = false);
+                    closeLeaveModal();
+                } else {
+                    showToast(res?.message || '代請假失敗', true);
+                }
+            } catch (e) {
+                showToast('連線異常', true);
+            } finally {
+                setBtnLoading(btn, false, '代為請假');
             }
         }
 
@@ -3326,24 +3441,35 @@
     <!-- 請假申請 Modal -->
     <div id="leave-modal"
         class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10100] items-center justify-center p-4">
-        <div class="glass-panel w-full max-w-sm rounded-[32px] p-6 shadow-2xl border-white/60 text-center animate-in">
+        <div
+            class="glass-panel w-full max-w-sm rounded-[32px] p-6 shadow-2xl border-white/60 text-center animate-in max-h-[90vh] flex flex-col">
             <div
-                class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500 shadow-inner">
+                class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500 shadow-inner shrink-0">
                 <i data-lucide="calendar-off" class="w-8 h-8"></i>
             </div>
-            <h3 class="text-xl font-[900] text-slate-800 tracking-tight mb-2">請假申請</h3>
-            <p class="text-xs font-bold text-slate-500 mb-6">請選擇您要請假的活動，送出後不列入缺席紀錄。<br><span
-                    class="text-amber-600 font-extrabold text-[11px] mt-1 block">⚠️ 活動當天 14:30 後即截止請假</span></p>
+            <h3 class="text-xl font-[900] text-slate-800 tracking-tight mb-2 shrink-0">請假申請</h3>
+            <p class="text-xs font-bold text-slate-500 mb-4 shrink-0">⚠️ 活動當天 14:30 後即截止請假</p>
 
-            <div class="space-y-4 mb-6 text-left">
-                <div>
-                    <label
-                        class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">選擇請假活動</label>
-                    <select id="leave-event-select"
-                        class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500/50">
-                        <option value="">載入中...</option>
-                    </select>
-                </div>
+            <!-- 分頁切換（僅 Leader / Admin / Officer 可見） -->
+            <div id="leave-tab-bar" class="hidden flex gap-1 p-1 bg-slate-100 rounded-[18px] mb-4 shrink-0">
+                <button id="leave-tab-self" onclick="switchLeaveTab('self')"
+                    class="flex-1 py-2 rounded-[14px] text-xs font-black transition-all bg-white text-amber-600 shadow-sm">本人請假</button>
+                <button id="leave-tab-proxy" onclick="switchLeaveTab('proxy')"
+                    class="flex-1 py-2 rounded-[14px] text-xs font-black transition-all text-slate-400">代組員請假</button>
+            </div>
+
+            <!-- 活動選擇（兩個分頁共用） -->
+            <div class="mb-4 text-left shrink-0">
+                <label
+                    class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">選擇請假活動</label>
+                <select id="leave-event-select"
+                    class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500/50">
+                    <option value="">載入中...</option>
+                </select>
+            </div>
+
+            <!-- 本人請假面板 -->
+            <div id="leave-self-panel" class="flex-1 overflow-y-auto space-y-3 text-left mb-4">
                 <div>
                     <label
                         class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">請假原因</label>
@@ -3353,7 +3479,26 @@
                 </div>
             </div>
 
-            <div class="flex gap-4">
+            <!-- 代組員請假面板 -->
+            <div id="leave-proxy-panel" class="hidden flex-1 overflow-y-auto space-y-3 text-left mb-4">
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">選擇組員</label>
+                    <div id="proxy-member-list"
+                        class="bg-slate-100 rounded-2xl p-2 space-y-1 max-h-40 overflow-y-auto hide-scroll">
+                        <div class="text-xs text-slate-400 text-center py-3">組員載入中...</div>
+                    </div>
+                </div>
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">請假原因</label>
+                    <textarea id="proxy-reason"
+                        class="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500/50 resize-none h-20"
+                        placeholder="請輸入請假原因(選填)..."></textarea>
+                </div>
+            </div>
+
+            <div class="flex gap-4 shrink-0">
                 <button onclick="closeLeaveModal()"
                     class="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-2xl font-black text-sm hover:bg-slate-200 active:scale-95 transition-all">取消</button>
                 <button id="leave-submit-btn" onclick="submitLeaveApp()"
